@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SupabaseConnectionTest } from '@/utils/supabaseConnectionTest';
 import { SupabaseMigrationHelper } from '@/services/supabaseMigrationHelper';
+import { AutomaticMigration, MigrationStep } from '@/utils/automaticMigration';
 
 interface ConnectionStatus {
   connected: boolean;
@@ -20,6 +21,8 @@ export default function SupabaseTestPage() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [migrationHelper, setMigrationHelper] = useState<SupabaseMigrationHelper | null>(null);
+  const [migrationProgress, setMigrationProgress] = useState<MigrationStep[]>([]);
+  const [migrationRunning, setMigrationRunning] = useState(false);
 
   useEffect(() => {
     // Initialize migration helper
@@ -81,6 +84,32 @@ export default function SupabaseTestPage() {
     }
   };
 
+  const runAutomaticMigration = async () => {
+    setMigrationRunning(true);
+    setMigrationProgress([]);
+    
+    const migration = new AutomaticMigration((steps) => {
+      setMigrationProgress(steps);
+    });
+    
+    try {
+      const success = await migration.runCompleteMigration();
+      
+      if (success) {
+        alert('🎉 Migration completed successfully! Refresh the page to see updated connection status.');
+        // Refresh connection test
+        await testConnection();
+      } else {
+        alert('⚠️ Migration completed with issues. Check the progress below for details.');
+      }
+    } catch (error) {
+      console.error('Migration failed:', error);
+      alert('❌ Migration failed. Check browser console for details.');
+    } finally {
+      setMigrationRunning(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Card>
@@ -136,11 +165,19 @@ export default function SupabaseTestPage() {
               {loading ? 'Testing...' : '🔄 Test Connection'}
             </Button>
             
-            <Button 
+            <Button
               onClick={testMigrationHelper}
               variant="outline"
             >
               🧪 Test Migration Helper
+            </Button>
+            
+            <Button
+              onClick={runAutomaticMigration}
+              disabled={migrationRunning}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {migrationRunning ? '🔄 Running Migration...' : '🚀 Run Automatic Migration'}
             </Button>
           </div>
 
@@ -157,6 +194,36 @@ export default function SupabaseTestPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Migration Progress */}
+      {migrationProgress.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🔄 Migration Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {migrationProgress.map((step, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
+                  <div className="flex-shrink-0">
+                    {step.status === 'completed' && <span className="text-green-500 text-lg">✅</span>}
+                    {step.status === 'failed' && <span className="text-red-500 text-lg">❌</span>}
+                    {step.status === 'running' && <span className="text-blue-500 text-lg">🔄</span>}
+                    {step.status === 'pending' && <span className="text-gray-400 text-lg">⏳</span>}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{step.step}</div>
+                    <div className="text-sm text-gray-600">{step.message}</div>
+                    {step.error && (
+                      <div className="text-xs text-red-600 mt-1">Error: {step.error}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

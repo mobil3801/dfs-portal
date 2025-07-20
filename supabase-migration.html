@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Migration Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .credentials-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .credentials-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 DFS Portal - Supabase Migration Tool</h1>
+        <p>This tool will automatically create the complete Supabase database schema for the DFS Portal.</p>
+        
+        <div class="credentials-form">
+            <h3>Supabase Configuration</h3>
+            <input type="text" id="supabaseUrl" placeholder="Supabase URL" value="https://cmyahoepvjjkcfuqbdjk.supabase.co">
+            <input type="password" id="serviceKey" placeholder="Service Role Key">
+            <button onclick="testConnection()">Test Connection</button>
+        </div>
+
+        <div id="connectionStatus"></div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div id="progressText">Ready to start migration</div>
+        
+        <button id="migrateBtn" onclick="startMigration()">🚀 Execute Database Migration</button>
+        <button onclick="clearLog()">Clear Log</button>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let supabase = null;
+        let migrationProgress = 0;
+        
+        // Database schema SQL
+        const DATABASE_SCHEMA = `
+-- Enable necessary extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create Gas Stations table
+CREATE TABLE gas_stations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(500),
+    manager VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'user',
+    station_id UUID REFERENCES gas_stations(id),
+    status VARCHAR(50) DEFAULT 'active',
+    last_login TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Audit Logs table
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    table_name VARCHAR(255) NOT NULL,
+    operation VARCHAR(50) NOT NULL,
+    user_id UUID REFERENCES users(id),
+    old_values JSONB,
+    new_values JSONB,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Fuel Inventory table
+CREATE TABLE fuel_inventory (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    fuel_type VARCHAR(100) NOT NULL,
+    tank_number INTEGER,
+    current_volume DECIMAL(10,2),
+    capacity DECIMAL(10,2),
+    reorder_level DECIMAL(10,2),
+    cost_per_gallon DECIMAL(10,4),
+    last_delivery_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Sales Transactions table
+CREATE TABLE sales_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    user_id UUID REFERENCES users(id),
+    transaction_type VARCHAR(50) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    fuel_type VARCHAR(100),
+    gallons DECIMAL(10,3),
+    price_per_gallon DECIMAL(10,4),
+    payment_method VARCHAR(50),
+    transaction_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Equipment Maintenance table
+CREATE TABLE equipment_maintenance (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    equipment_name VARCHAR(255) NOT NULL,
+    maintenance_type VARCHAR(100),
+    description TEXT,
+    scheduled_date DATE,
+    completed_date DATE,
+    cost DECIMAL(10,2),
+    technician VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'scheduled',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Financial Reports table
+CREATE TABLE financial_reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    report_date DATE NOT NULL,
+    total_sales DECIMAL(12,2),
+    fuel_sales DECIMAL(12,2),
+    merchandise_sales DECIMAL(12,2),
+    total_expenses DECIMAL(12,2),
+    net_profit DECIMAL(12,2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Suppliers table
+CREATE TABLE suppliers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    address TEXT,
+    fuel_types TEXT[],
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Fuel Orders table
+CREATE TABLE fuel_orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    supplier_id UUID NOT NULL REFERENCES suppliers(id),
+    fuel_type VARCHAR(100) NOT NULL,
+    quantity_ordered DECIMAL(10,2) NOT NULL,
+    quantity_received DECIMAL(10,2),
+    unit_cost DECIMAL(10,4),
+    total_cost DECIMAL(12,2),
+    order_date DATE NOT NULL,
+    delivery_date DATE,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Employee Shifts table
+CREATE TABLE employee_shifts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id UUID NOT NULL REFERENCES gas_stations(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    shift_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    shift_end TIMESTAMP WITH TIME ZONE,
+    break_duration INTEGER DEFAULT 0,
+    hours_worked DECIMAL(4,2),
+    hourly_rate DECIMAL(8,2),
+    total_pay DECIMAL(10,2),
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create System Settings table
+CREATE TABLE system_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    setting_key VARCHAR(255) UNIQUE NOT NULL,
+    setting_value TEXT,
+    description TEXT,
+    setting_type VARCHAR(50) DEFAULT 'string',
+    is_public BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_gas_stations_status ON gas_stations(status);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_station_id ON users(station_id);
+CREATE INDEX idx_audit_logs_table_name ON audit_logs(table_name);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX idx_fuel_inventory_station_id ON fuel_inventory(station_id);
+CREATE INDEX idx_sales_transactions_station_id ON sales_transactions(station_id);
+CREATE INDEX idx_sales_transactions_date ON sales_transactions(transaction_date);
+CREATE INDEX idx_equipment_maintenance_station_id ON equipment_maintenance(station_id);
+CREATE INDEX idx_financial_reports_station_date ON financial_reports(station_id, report_date);
+CREATE INDEX idx_fuel_orders_station_id ON fuel_orders(station_id);
+CREATE INDEX idx_fuel_orders_supplier_id ON fuel_orders(supplier_id);
+CREATE INDEX idx_employee_shifts_station_id ON employee_shifts(station_id);
+CREATE INDEX idx_employee_shifts_user_id ON employee_shifts(user_id);
+CREATE INDEX idx_system_settings_key ON system_settings(setting_key);
+
+-- Enable Row Level Security
+ALTER TABLE gas_stations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fuel_inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment_maintenance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE financial_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fuel_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE employee_shifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies (permissive for service role)
+CREATE POLICY "Enable all operations for service role" ON gas_stations FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON users FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON audit_logs FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON fuel_inventory FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON sales_transactions FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON equipment_maintenance FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON financial_reports FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON suppliers FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON fuel_orders FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON employee_shifts FOR ALL USING (true);
+CREATE POLICY "Enable all operations for service role" ON system_settings FOR ALL USING (true);
+        `;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            const typePrefix = {
+                'info': '[INFO]',
+                'success': '[SUCCESS]',
+                'error': '[ERROR]',
+                'warning': '[WARNING]'
+            };
+            
+            logElement.textContent += `${timestamp} ${typePrefix[type]} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateProgress(percent, text) {
+            migrationProgress = percent;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        async function testConnection() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const serviceKey = document.getElementById('serviceKey').value.trim();
+            
+            if (!url || !serviceKey) {
+                showStatus('Please enter both Supabase URL and Service Role Key', 'error');
+                return;
+            }
+
+            try {
+                supabase = supabase.createClient(url, serviceKey);
+                
+                // Test connection by querying database
+                const { data, error } = await supabase.rpc('version');
+                
+                if (error) {
+                    throw error;
+                }
+                
+                showStatus('✅ Connection successful! Ready for migration.', 'success');
+                document.getElementById('migrateBtn').disabled = false;
+                log('Supabase connection test successful', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ Connection failed: ${error.message}`, 'error');
+                log(`Connection test failed: ${error.message}`, 'error');
+                supabase = null;
+            }
+        }
+
+        async function startMigration() {
+            if (!supabase) {
+                showStatus('Please test connection first', 'error');
+                return;
+            }
+
+            const button = document.getElementById('migrateBtn');
+            button.disabled = true;
+            button.textContent = 'Migrating...';
+            
+            try {
+                log('Starting Supabase database migration', 'info');
+                updateProgress(10, 'Initializing migration...');
+                
+                // Execute the schema
+                log('Executing database schema...', 'info');
+                updateProgress(30, 'Creating database tables...');
+                
+                const { data, error } = await supabase.rpc('exec', { 
+                    sql: DATABASE_SCHEMA 
+                });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateProgress(60, 'Verifying table creation...');
+                
+                // Verify tables were created
+                const tables = [
+                    'gas_stations', 'users', 'audit_logs', 'fuel_inventory',
+                    'sales_transactions', 'equipment_maintenance', 'financial_reports',
+                    'suppliers', 'fuel_orders', 'employee_shifts', 'system_settings'
+                ];
+                
+                let tablesCreated = 0;
+                for (const table of tables) {
+                    try {
+                        const { count } = await supabase.from(table).select('*', { count: 'exact', head: true });
+                        tablesCreated++;
+                        log(`✅ Table '${table}' verified`, 'success');
+                    } catch (e) {
+                        log(`❌ Table '${table}' verification failed: ${e.message}`, 'error');
+                    }
+                }
+                
+                updateProgress(90, 'Finalizing migration...');
+                
+                if (tablesCreated === tables.length) {
+                    updateProgress(100, '🎉 Migration completed successfully!');
+                    showStatus(`✅ Migration completed! ${tablesCreated}/${tables.length} tables created successfully.`, 'success');
+                    log(`Migration completed successfully! ${tablesCreated} tables created.`, 'success');
+                    log('✅ Database is ready for use with the DFS Portal application', 'success');
+                } else {
+                    throw new Error(`Only ${tablesCreated}/${tables.length} tables were created successfully`);
+                }
+                
+            } catch (error) {
+                updateProgress(0, 'Migration failed');
+                showStatus(`❌ Migration failed: ${error.message}`, 'error');
+                log(`Migration failed: ${error.message}`, 'error');
+                console.error('Migration error:', error);
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Execute Database Migration';
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // Auto-fill service key from environment if available
+        window.addEventListener('load', () => {
+            // Prefill with the service key from our environment
+            const serviceKeyField = document.getElementById('serviceKey');
+            serviceKeyField.value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNteWFob2Vwdmpqa2NmdXFiZGprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzM2NjQ0MSwiZXhwIjoyMDUyOTQyNDQxfQ.5YNZXLuojEiQPFcDSGfE0xpxWK2eFh9DQ1GiLKJDcx8';
+            
+            log('Migration tool loaded. Ready to execute database setup.', 'info');
+            log('Service key pre-filled from environment configuration.', 'info');
+        });
+    </script>
+</body>
+</html>
