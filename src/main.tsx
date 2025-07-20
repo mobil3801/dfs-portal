@@ -3,6 +3,8 @@ import App from './App.tsx';
 import './index.css';
 import { initializeMemoryLeakDetection } from './utils/memoryLeakIntegration';
 import { setupInvalidCharacterErrorMonitor } from './utils/errorPreventionHelper';
+// Initialize global EZSite API replacement with Supabase adapter
+import './lib/globalApiReplacement';
 
 // Performance API Polyfill for environments that don't support it
 if (typeof window !== 'undefined' && !window.performance) {

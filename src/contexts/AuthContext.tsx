@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { supabaseAdapter } from '@/services/supabase/supabaseAdapter';
 import AuditLoggerService from '@/services/auditLogger';
 
 const auditLogger = AuditLoggerService.getInstance();
@@ -76,15 +78,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     try {
       console.log('🔄 Attempting to fetch user data...');
 
-      // Check if APIs are available
-      if (!window.ezsite?.apis) {
-        throw new Error('EZSite APIs not available');
-      }
-
-      const userResponse = await window.ezsite.apis.getUserInfo();
+      // Get current user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       // Handle response with no data (user not authenticated)
-      if (!userResponse.data) {
+      if (!user || authError) {
         console.log('👤 No user data - user not authenticated');
         setUser(null);
         setUserProfile(GUEST_PROFILE);
@@ -92,29 +90,26 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         return { success: false };
       }
 
-      // Handle API errors
-      if (userResponse.error) {
-        console.log('❌ User info API error:', userResponse.error);
-        if (showErrors) {
-          setAuthError(`Authentication failed: ${userResponse.error}`);
-        }
-        setUser(null);
-        setUserProfile(GUEST_PROFILE);
-        return { success: false };
-      }
+      // Convert Supabase user to our User interface
+      const userData: User = {
+        ID: parseInt(user.id.replace(/[^0-9]/g, '').slice(-8)), // Convert UUID to number for compatibility
+        Name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
+        Email: user.email || '',
+        CreateTime: user.created_at || new Date().toISOString()
+      };
 
-      console.log('✅ User data fetched successfully:', userResponse.data);
-      setUser(userResponse.data);
+      console.log('✅ User data fetched successfully:', userData);
+      setUser(userData);
 
       // Fetch user profile with retries
       try {
-        console.log('🔄 Fetching user profile for user ID:', userResponse.data.ID);
+        console.log('🔄 Fetching user profile for user ID:', userData.ID);
 
-        const profileResponse = await window.ezsite.apis.tablePage(11725, {
+        const profileResponse = await supabaseAdapter.tablePage(11725, {
           PageNo: 1,
           PageSize: 1,
           Filters: [
-          { name: "user_id", op: "Equal", value: userResponse.data.ID }]
+          { name: "user_id", op: "Equal", value: userData.ID }]
 
         });
 
@@ -123,7 +118,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
           // Use default profile for authenticated user without profile
           setUserProfile({
             id: 0,
-            user_id: userResponse.data.ID,
+            user_id: userData.ID,
             role: 'Employee',
             station: 'MOBIL',
             employee_id: '',
@@ -141,7 +136,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
           // Create default profile for user without one
           setUserProfile({
             id: 0,
-            user_id: userResponse.data.ID,
+            user_id: userData.ID,
             role: 'Employee',
             station: 'MOBIL',
             employee_id: '',
@@ -157,19 +152,20 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         // Use default profile if profile fetch fails
         setUserProfile({
           id: 0,
-          user_id: userResponse.data.ID,
+          user_id: userData.ID,
           role: 'Employee',
           station: 'MOBIL',
           employee_id: '',
           phone: '',
           hire_date: new Date().toISOString(),
           is_active: true,
-          detailed_permissions: {}
+          detailed_permissions: {},
+          profile_image_id: null
         });
       }
 
       setAuthError(null);
-      return { success: true, userData: userResponse.data };
+      return { success: true, userData };
 
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
@@ -200,20 +196,21 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     setIsLoading(true);
 
     try {
-      // Wait for APIs to be available
-      let attempts = 0;
-      while (!window.ezsite?.apis && attempts < 30) {
-        console.log(`⏳ Waiting for EZSite APIs... (attempt ${attempts + 1})`);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        attempts++;
-      }
-
-      if (!window.ezsite?.apis) {
-        throw new Error('EZSite APIs failed to load');
-      }
-
-      console.log('✅ EZSite APIs loaded, fetching user data...');
+      console.log('✅ Supabase client ready, fetching user data...');
       await safeFetchUserData(false);
+
+      // Listen for auth state changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await safeFetchUserData(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setUserProfile(GUEST_PROFILE);
+          setAuthError(null);
+        }
+      });
 
     } catch (error) {
       console.error('❌ Auth initialization failed:', error);
@@ -245,22 +242,21 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
       console.log('🔑 Attempting login for:', email);
 
-      if (!window.ezsite?.apis) {
-        throw new Error('Authentication system not available');
-      }
-
       // Small delay to prevent rapid successive calls
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const response = await window.ezsite.apis.login({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      if (response.error) {
-        console.log('❌ Login API failed:', response.error);
-        await auditLogger.logLogin(email, false, undefined, response.error);
-        setAuthError(response.error);
+      if (error) {
+        console.log('❌ Login API failed:', error.message);
+        await auditLogger.logLogin(email, false, undefined, error.message);
+        setAuthError(error.message);
         toast({
           title: "Login Failed",
-          description: response.error,
+          description: error.message,
           variant: "destructive"
         });
         return false;
@@ -312,9 +308,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         await auditLogger.logLogout(user.Email, user.ID);
       }
 
-      if (window.ezsite?.apis) {
-        await window.ezsite.apis.logout();
-      }
+      await supabase.auth.signOut();
 
       setUser(null);
       setUserProfile(GUEST_PROFILE);
@@ -342,19 +336,23 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
       console.log('📝 Attempting registration for:', email);
 
-      if (!window.ezsite?.apis) {
-        throw new Error('Registration system not available');
-      }
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
 
-      const response = await window.ezsite.apis.register({ email, password });
-
-      if (response.error) {
-        console.log('❌ Registration failed:', response.error);
-        await auditLogger.logRegistration(email, false, response.error);
-        setAuthError(response.error);
+      if (error) {
+        console.log('❌ Registration failed:', error.message);
+        await auditLogger.logRegistration(email, false, error.message);
+        setAuthError(error.message);
         toast({
           title: "Registration Failed",
-          description: response.error,
+          description: error.message,
           variant: "destructive"
         });
         return false;
