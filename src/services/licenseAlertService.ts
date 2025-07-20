@@ -1,5 +1,6 @@
 // License Alert Service for automated SMS notifications
 import { smsService } from './smsService';
+import { SupabaseMigrationHelper } from './supabaseMigrationHelper';
 
 interface License {
   id: number;
@@ -43,8 +44,9 @@ class LicenseAlertService {
     try {
       console.log('🔍 Checking for licenses requiring alerts...');
 
-      // Get all active alert settings
-      const { data: settingsData, error: settingsError } = await window.ezsite.apis.tablePage('12611', {
+      // Get all active alert settings using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data: settingsData, error: settingsError } = await migrationHelper.callApi('tablePage', 12611, {
         PageNo: 1,
         PageSize: 100,
         OrderByField: 'id',
@@ -65,8 +67,8 @@ class LicenseAlertService {
         return;
       }
 
-      // Get all active licenses
-      const { data: licensesData, error: licensesError } = await window.ezsite.apis.tablePage('11731', {
+      // Get all active licenses using Supabase migration helper
+      const { data: licensesData, error: licensesError } = await migrationHelper.callApi('tablePage', 11731, {
         PageNo: 1,
         PageSize: 1000,
         OrderByField: 'expiry_date',
@@ -84,8 +86,8 @@ class LicenseAlertService {
       const licenses: License[] = licensesData.List || [];
       console.log(`Found ${licenses.length} active licenses to check`);
 
-      // Get all active SMS contacts
-      const { data: contactsData, error: contactsError } = await window.ezsite.apis.tablePage('12612', {
+      // Get all active SMS contacts using Supabase migration helper
+      const { data: contactsData, error: contactsError } = await migrationHelper.callApi('tablePage', 12612, {
         PageNo: 1,
         PageSize: 100,
         OrderByField: 'id',
@@ -157,8 +159,9 @@ class LicenseAlertService {
   frequencyDays: number)
   : Promise<boolean> {
     try {
-      // Get the last alert sent for this license/setting combination
-      const { data, error } = await window.ezsite.apis.tablePage('12613', {
+      // Get the last alert sent for this license/setting combination using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data, error } = await migrationHelper.callApi('tablePage', 12613, {
         PageNo: 1,
         PageSize: 1,
         OrderByField: 'sent_date',
@@ -225,8 +228,9 @@ class LicenseAlertService {
         type: 'license_alert'
       });
 
-      // Record in history
-      await window.ezsite.apis.tableCreate('12613', {
+      // Record in history using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      await migrationHelper.callApi('tableCreate', 12613, {
         license_id: license.id,
         contact_id: contact.id,
         mobile_number: contact.mobile_number,
@@ -271,8 +275,9 @@ class LicenseAlertService {
    */
   async sendImmediateAlert(licenseId: number): Promise<{success: boolean;message: string;}> {
     try {
-      // Get license details using ID field
-      const { data: licenseData, error: licenseError } = await window.ezsite.apis.tablePage('11731', {
+      // Get license details using ID field and Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data: licenseData, error: licenseError } = await migrationHelper.callApi('tablePage', 11731, {
         PageNo: 1,
         PageSize: 1,
         OrderByField: 'id',
@@ -291,8 +296,8 @@ class LicenseAlertService {
       const today = new Date();
       const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Get active contacts
-      const { data: contactsData, error: contactsError } = await window.ezsite.apis.tablePage('12612', {
+      // Get active contacts using Supabase migration helper
+      const { data: contactsData, error: contactsError } = await migrationHelper.callApi('tablePage', 12612, {
         PageNo: 1,
         PageSize: 100,
         OrderByField: 'id',
@@ -324,7 +329,7 @@ class LicenseAlertService {
           type: 'immediate_alert'
         });
 
-        await window.ezsite.apis.tableCreate('12613', {
+        await migrationHelper.callApi('tableCreate', 12613, {
           license_id: license.ID, // Use the actual ID field
           contact_id: contact.id,
           mobile_number: contact.mobile_number,
