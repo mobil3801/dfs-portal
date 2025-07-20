@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { SupabaseMigrationHelper } from '@/services/supabaseMigrationHelper';
 
 interface ModulePermissions {
   view: boolean;
@@ -47,8 +48,9 @@ export const useRealtimePermissions = (module: string) => {
     try {
       setLoading(true);
 
-      // Fetch user profile with permissions using correct field name
-      const { data, error } = await window.ezsite.apis.tablePage('11725', {
+      // Fetch user profile with permissions using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data, error } = await migrationHelper.callApi('tablePage', 11725, {
         PageNo: 1,
         PageSize: 1,
         OrderByField: 'id',
@@ -128,8 +130,9 @@ export const useRealtimePermissions = (module: string) => {
       const newPermissions = { ...permissions, [permission]: enabled };
       setPermissions(newPermissions);
 
-      // Get current user data
-      const { data, error } = await window.ezsite.apis.tablePage('11725', {
+      // Get current user data using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data, error } = await migrationHelper.callApi('tablePage', 11725, {
         PageNo: 1,
         PageSize: 1,
         OrderByField: 'id',
@@ -162,8 +165,8 @@ export const useRealtimePermissions = (module: string) => {
         [module]: newPermissions
       };
 
-      // Save to database
-      const updateResult = await window.ezsite.apis.tableUpdate('11725', {
+      // Save to database using Supabase migration helper
+      const updateResult = await migrationHelper.callApi('tableUpdate', 11725, {
         id: user.id,
         detailed_permissions: JSON.stringify(updatedPermissions)
       });
