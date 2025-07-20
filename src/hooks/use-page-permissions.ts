@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { SupabaseMigrationHelper } from '@/services/supabaseMigrationHelper';
 
 interface PagePermission {
   view: boolean;
@@ -63,8 +64,9 @@ export const usePagePermissions = (pageKey: string) => {
       setLoading(true);
       console.log('Fetching permissions for user:', user?.ID, 'Page:', pageKey);
 
-      // Fetch user profile from database
-      const { data, error } = await window.ezsite.apis.tablePage(11725, {
+      // Fetch user profile from database using Supabase migration helper
+      const migrationHelper = SupabaseMigrationHelper.getInstance();
+      const { data, error } = await migrationHelper.callApi('tablePage', 11725, {
         PageNo: 1,
         PageSize: 1,
         OrderByField: "id",
