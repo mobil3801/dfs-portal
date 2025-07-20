@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFS Portal Database Setup Guide</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; line-height: 1.6; }
+        .header { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 30px; }
+        .step { background: #f8fafc; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #10b981; }
+        .warning { background: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; }
+        .code { background: #1f2937; color: #e5e7eb; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; overflow-x: auto; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        ul { margin: 10px 0; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 DFS Portal Database Setup Guide</h1>
+        <p>Complete instructions for setting up your Supabase database schema</p>
+    </div>
+
+    <div class="warning">
+        <h3>⚠️ Why Automated Scripts Don't Work</h3>
+        <ul>
+            <li>Supabase restricts direct SQL execution from client applications for security</li>
+            <li>Schema changes require admin-level database access</li>
+            <li>Complex features like RLS policies need proper database context</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>✅ Method 1: Supabase Dashboard (Recommended)</h2>
+        
+        <h3>Step 1: Access Your Project</h3>
+        <ul>
+            <li>Go to <a href="https://supabase.com/dashboard" target="_blank">https://supabase.com/dashboard</a></li>
+            <li>Select your DFS Portal project</li>
+        </ul>
+
+        <h3>Step 2: Open SQL Editor</h3>
+        <ul>
+            <li>Click "SQL Editor" in the left sidebar</li>
+            <li>Click "New query" to create a new editor tab</li>
+        </ul>
+
+        <h3>Step 3: Execute Schema</h3>
+        <ul>
+            <li>Copy the entire contents of <code>src/database/supabase-schema.sql</code></li>
+            <li>Paste it into the SQL editor</li>
+            <li>Click the "RUN" button</li>
+        </ul>
+
+        <h3>Step 4: Verify Success</h3>
+        <ul>
+            <li>Check the "Table Editor" to see your new tables</li>
+            <li>Run the verification script: <code>node scripts/supabase-setup-guide.js</code></li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>🔧 Method 2: Supabase CLI (Advanced)</h2>
+        
+        <div class="code">
+# Install Supabase CLI
+npm install supabase --save-dev
+
+# Login to Supabase
+npx supabase login
+
+# Link your project
+npx supabase link --project-ref YOUR_PROJECT_REF
+
+# Create a migration (optional)
+npx supabase migration new setup_dfs_schema
+
+# Apply changes
+npx supabase db push
+        </div>
+    </div>
+
+    <div class="warning">
+        <h3>🔍 Important Notes</h3>
+        <ul>
+            <li><strong>Backup First:</strong> Always backup your database before schema changes</li>
+            <li><strong>Test Environment:</strong> Test in development before production</li>
+            <li><strong>RLS Policies:</strong> The schema includes Row Level Security</li>
+            <li><strong>Auth Integration:</strong> Some tables reference Supabase's auth.users table</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>📊 Schema Overview</h2>
+        <p>The schema creates the following tables:</p>
+        <ul>
+            <li><strong>stations</strong> - Gas station locations and info</li>
+            <li><strong>user_profiles</strong> - User roles and permissions</li>
+            <li><strong>employees</strong> - Employee records</li>
+            <li><strong>audit_logs</strong> - System audit trail</li>
+            <li><strong>sms_config</strong> - SMS service configuration</li>
+            <li><strong>sms_history</strong> - SMS message history</li>
+            <li><strong>sms_settings</strong> - SMS system settings</li>
+            <li><strong>alert_settings</strong> - Alert configuration</li>
+            <li><strong>licenses</strong> - License tracking</li>
+            <li><strong>sms_contacts</strong> - SMS contact list</li>
+            <li><strong>alert_history</strong> - Alert history log</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>🔗 Helpful Resources</h2>
+        <ul>
+            <li><a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+            <li><a href="https://supabase.com/docs/guides/database/sql-editor" target="_blank">SQL Editor Documentation</a></li>
+            <li><a href="https://supabase.com/docs/guides/cli" target="_blank">Supabase CLI Guide</a></li>
+            <li><a href="https://supabase.com/docs/guides/auth/row-level-security" target="_blank">Row Level Security</a></li>
+        </ul>
+    </div>
+</body>
+</html>
