@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  dfs-manager-portal:
+    build: .
+    container_name: dfs-manager-portal
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - dfs-network
+
+  # Optional: Add a reverse proxy for SSL termination
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/nginx/ssl
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - dfs-manager-portal
+    networks:
+      - dfs-network
+    profiles:
+      - ssl
+
+networks:
+  dfs-network:
+    driver: bridge
+
+volumes:
+  ssl-certs:
