@@ -1,0 +1,9 @@
+# Netlify redirects file
+/*    /index.html   200
+
+# API redirects (if you're using a separate API server)
+/api/*  https://your-api-domain.com/api/:splat  200
+
+# Force HTTPS
+http://dfs-manager-portal.netlify.app/*  https://dfs-manager-portal.netlify.app/:splat  301!
+http://www.dfs-manager-portal.netlify.app/*  https://dfs-manager-portal.netlify.app/:splat  301!
