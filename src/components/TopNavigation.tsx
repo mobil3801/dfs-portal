@@ -107,25 +107,25 @@ const TopNavigation = () => {
     name: 'Vendor',
     href: '/vendors',
     icon: Building,
-    requiredRole: 'manager'
+    requiredRole: null // Changed: Now accessible to all authenticated users
   },
   {
     name: 'Order',
     href: '/orders',
     icon: ClipboardList,
-    requiredRole: 'manager'
+    requiredRole: null // Changed: Now accessible to all authenticated users
   },
   {
     name: 'Licenses',
     href: '/licenses',
     icon: Calendar,
-    requiredRole: 'manager'
+    requiredRole: null // Changed: Now accessible to all authenticated users
   },
   {
     name: 'Salary',
     href: '/salary',
     icon: DollarSign,
-    requiredRole: 'manager'
+    requiredRole: null // Changed: Now accessible to all authenticated users
   },
   {
     name: 'Settings',
@@ -178,6 +178,7 @@ const TopNavigation = () => {
   const accessiblePrimaryItems = primaryNavItems.filter((item) => canAccessRoute(item.requiredRole));
   const accessibleSecondaryItems = secondaryNavItems.filter((item) => canAccessRoute(item.requiredRole));
   const allNavigationItems = [...primaryNavItems, ...secondaryNavItems];
+
 
   const NavigationLink = ({ item, mobile = false, dropdown = false }: {item: any;mobile?: boolean;dropdown?: boolean;}) => {
     if (!canAccessRoute(item.requiredRole)) return null;
