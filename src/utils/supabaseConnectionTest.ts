@@ -36,9 +36,9 @@ export class SupabaseConnectionTest {
       }
       result.details.clientConfigured = true;
       console.log('Supabase client is configured');
-
+      
       // Test 2: Check if we can reach the database
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('information_schema.tables')
         .select('table_name')
         .eq('table_schema', 'public')
@@ -91,7 +91,7 @@ export class SupabaseConnectionTest {
    */
   static async testTableOperation(tableName: string = 'stations'): Promise<{success: boolean; error?: string; count?: number}> {
     try {
-      const { data, error, count } = await supabase
+      const { error, count } = await supabase
         .from(tableName)
         .select('*', { count: 'exact', head: true });
 

@@ -33,13 +33,21 @@ function createEnhancedEzsiteApiReplacement() {
     // File upload functionality
     upload: async (uploadData: { filename: string, content?: any, file?: File }) => {
       try {
-        // For now, return a mock file ID
-        // TODO: Implement actual file upload to Supabase Storage
-        const mockFileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('Mock file upload:', uploadData.filename, 'assigned ID:', mockFileId);
-        
+        if (!uploadData.file) {
+          return { data: null, error: 'No file provided' };
+        }
+        const file = uploadData.file;
+        const filePath = `public/${uploadData.filename}`;
+        const { data, error } = await supabase.storage.from('uploads').upload(filePath, file);
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        const { data: publicUrlData } = supabase.storage.from('uploads').getPublicUrl(filePath);
+
         return {
-          data: mockFileId,
+          data: publicUrlData.publicUrl,
           error: null
         };
       } catch (error: any) {
@@ -64,7 +72,7 @@ function createEnhancedEzsiteApiReplacement() {
 
         // Convert Supabase user to EZSite format
         const userData = {
-          ID: parseInt(user.id.replace(/[^0-9]/g, '').slice(-8)), // Convert UUID to number
+          ID: parseInt(user.id.replace(/\D/g, '').slice(-8)), // Convert UUID to number
           Name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
           Email: user.email || '',
           CreateTime: user.created_at || new Date().toISOString()
@@ -84,7 +92,7 @@ function createEnhancedEzsiteApiReplacement() {
 
     login: async (credentials: {email: string, password: string}) => {
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password
         });
@@ -115,7 +123,7 @@ function createEnhancedEzsiteApiReplacement() {
 
     register: async (userData: {email: string, password: string, name?: string}) => {
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: userData.email,
           password: userData.password,
           options: {
@@ -137,9 +145,13 @@ function createEnhancedEzsiteApiReplacement() {
 
     resetPassword: async (data: {token: string, password: string}) => {
       try {
-        // TODO: Implement password reset with Supabase
-        console.log('Password reset not yet implemented for Supabase');
-        return { error: 'Password reset not yet implemented' };
+        const { error } = await supabase.auth.updateUser({ password: data.password });
+
+        if (error) {
+          return { error: error.message };
+        }
+        
+        return { error: null };
       } catch (error: any) {
         return { error: error.message || 'Password reset failed' };
       }

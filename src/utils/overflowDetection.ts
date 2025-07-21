@@ -27,7 +27,7 @@ export interface OverflowIssue {
 }
 
 export class OverflowDetector {
-  private config: OverflowDetectionConfig;
+  private readonly config: OverflowDetectionConfig;
   private issues: OverflowIssue[] = [];
   private observer: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
@@ -173,6 +173,7 @@ export class OverflowDetector {
       try {
         return element.matches(selector);
       } catch (e) {
+        console.error(`Invalid selector in excludeSelectors: "${selector}"`, e);
         return false;
       }
     });
