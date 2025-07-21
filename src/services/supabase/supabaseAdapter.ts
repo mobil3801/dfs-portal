@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 const TABLE_ID_MAPPING: Record<string | number, string> = {
   12599: 'stations',
   11725: 'user_profiles',
-  11727: 'employees', 
+  11727: 'employees',
   12706: 'audit_logs',
   24201: 'sms_config',
   24202: 'sms_history',
@@ -14,6 +14,7 @@ const TABLE_ID_MAPPING: Record<string | number, string> = {
   11731: 'licenses',
   12612: 'sms_contacts',
   12613: 'alert_history',
+  25712: 'module_access', // Module permissions table
   'User': 'auth.users' // Built-in users table
 }
 
