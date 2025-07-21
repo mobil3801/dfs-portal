@@ -383,12 +383,33 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   };
 
   const hasPermission = (action: string, resource?: string): boolean => {
-    if (!userProfile || userProfile.role === 'Guest') {
+    console.log('🔍 DEBUG - hasPermission check:', {
+      action,
+      resource,
+      userProfile: userProfile ? {
+        id: userProfile.id,
+        role: userProfile.role,
+        hasDetailedPermissions: !!userProfile.detailed_permissions
+      } : null
+    });
+
+    if (!userProfile) {
+      console.log('❌ DEBUG - Permission denied: No user profile');
+      return false;
+    }
+    
+    // Log the exact role value for debugging
+    console.log(`🔍 DEBUG - User role: "${userProfile.role}" (type: ${typeof userProfile.role})`);
+    
+    if (userProfile.role === 'Guest') {
+      console.log('❌ DEBUG - Permission denied: Guest role');
       return false;
     }
 
-    // Admins have all permissions
-    if (userProfile.role === 'Administrator' || userProfile.role === 'Admin') {
+    // Admins have all permissions - check case variations
+    const adminRoles = ['Administrator', 'Admin', 'ADMIN', 'administrator'];
+    if (adminRoles.some(role => userProfile.role === role)) {
+      console.log(`✅ DEBUG - Permission granted: Admin role (${userProfile.role})`);
       return true;
     }
 
@@ -397,36 +418,50 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       try {
         let permissions;
         if (typeof userProfile.detailed_permissions === 'string') {
+          console.log('🔍 DEBUG - Parsing permissions from string');
           // Only try to parse if it's a valid JSON string
           if (userProfile.detailed_permissions.trim().startsWith('{') || userProfile.detailed_permissions.trim().startsWith('[')) {
             permissions = JSON.parse(userProfile.detailed_permissions);
+            console.log('✅ DEBUG - Successfully parsed permissions JSON:', permissions);
           } else {
             // Invalid JSON string, skip detailed permissions
+            console.log('⚠️ DEBUG - Invalid JSON string for permissions:', userProfile.detailed_permissions);
             permissions = {};
           }
         } else {
+          console.log('🔍 DEBUG - Using object permissions directly:', userProfile.detailed_permissions);
           permissions = userProfile.detailed_permissions;
         }
 
-        if (resource && permissions[resource] && permissions[resource][action]) {
-          return true;
+        if (resource && permissions[resource]) {
+          console.log(`🔍 DEBUG - Found resource "${resource}" in permissions:`, permissions[resource]);
+          if (permissions[resource][action]) {
+            console.log(`✅ DEBUG - Permission granted from detailed permissions: ${resource}.${action}`);
+            return true;
+          }
         }
       } catch (error) {
-        console.warn('Error parsing permissions, using default role-based permissions:', error);
+        console.warn('❌ DEBUG - Error parsing permissions, using default role-based permissions:', error);
       }
     }
 
-    // Default permissions for managers
-    if (userProfile.role === 'Management' || userProfile.role === 'Manager') {
+    // Default permissions for managers - check case variations
+    const managerRoles = ['Management', 'Manager', 'MANAGER', 'management'];
+    if (managerRoles.some(role => userProfile.role === role)) {
       const managerActions = ['view', 'create', 'edit'];
-      return managerActions.includes(action);
+      const hasAccess = managerActions.includes(action);
+      console.log(`${hasAccess ? '✅' : '❌'} DEBUG - Manager permission for ${action}: ${hasAccess}`);
+      return hasAccess;
     }
 
     // Default permissions for employees
     if (userProfile.role === 'Employee') {
-      return action === 'view';
+      const hasAccess = action === 'view';
+      console.log(`${hasAccess ? '✅' : '❌'} DEBUG - Employee permission for ${action}: ${hasAccess}`);
+      return hasAccess;
     }
 
+    console.log(`❌ DEBUG - Permission denied: No matching role rules for role "${userProfile.role}"`);
     return false;
   };
 
