@@ -48,6 +48,7 @@ const UserValidationTestPage = lazy(() => import('@/pages/Admin/UserValidationTe
 const AuthDiagnosticPage = lazy(() => import('@/pages/AuthDiagnosticPage'));
 const ModuleAccessPage = lazy(() => import('@/pages/Admin/ModuleAccessPage'));
 const NavigationDebugPage = lazy(() => import('@/pages/Admin/NavigationDebugPage'));
+const NavigationDiagnosticPage = lazy(() => import('@/pages/Admin/NavigationDiagnosticPage'));
 const DatabaseMonitoring = lazy(() => import('@/pages/Admin/DatabaseMonitoring'));
 const AuditMonitoring = lazy(() => import('@/pages/Admin/AuditMonitoring'));
 const SupabaseTestPage = lazy(() => import('@/pages/supabase-test'));
@@ -372,6 +373,11 @@ const AppRouter = () => {
             <Route path="admin/navigation-debug" element={
             <Suspense fallback={<PageLoader />}>
                 <NavigationDebugPage />
+              </Suspense>
+            } />
+            <Route path="admin/navigation-diagnostic" element={
+            <Suspense fallback={<PageLoader />}>
+                <NavigationDiagnosticPage />
               </Suspense>
             } />
             <Route path="admin/database" element={

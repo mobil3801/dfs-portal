@@ -41,10 +41,10 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
   // Filter items based on permissions
   const accessibleItems = items.filter((item) => canAccessRoute(item.requiredRole));
 
-  // Debug logging
+  // Enhanced debug logging
   useEffect(() => {
     if (debug) {
-      console.log('OverflowNavigation Debug:', {
+      console.log('🔄 OverflowNavigation Debug:', {
         totalItems: items.length,
         accessibleItems: accessibleItems.length,
         visibleItems: visibleItems.length,
@@ -52,8 +52,20 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
         isCalculating,
         hasError,
         calculationAttempts,
-        forceShowAll
+        forceShowAll,
+        containerWidth: containerRef.current?.offsetWidth || 'unknown',
+        hiddenItemsCount: hiddenContainerRef.current?.children.length || 'unknown',
+        timestamp: new Date().toISOString()
       });
+      
+      // Log accessible items for debugging
+      console.log('📋 Accessible Navigation Items:',
+        accessibleItems.map(item => ({
+          name: item.name,
+          href: item.href,
+          requiredRole: item.requiredRole
+        }))
+      );
     }
   }, [items.length, accessibleItems.length, visibleItems.length, overflowItems.length, isCalculating, hasError, calculationAttempts, debug, forceShowAll]);
 
@@ -62,14 +74,17 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
   };
 
   const calculateOverflow = useCallback(() => {
+    if (debug) console.log('🧮 OVERFLOW: Starting calculation attempt', calculationAttempts);
+    
     if (!containerRef.current || !hiddenContainerRef.current) {
       // If refs aren't ready yet, try again or fallback
       if (calculationAttempts < 5) {
+        if (debug) console.log('⚠️ OVERFLOW: Refs not ready, retrying...');
         setCalculationAttempts((prev) => prev + 1);
         setTimeout(() => calculateOverflow(), 50);
       } else {
         // Fallback: show all items directly
-        console.log('OverflowNavigation: Refs not ready after 5 attempts, showing all items');
+        console.log('❌ OVERFLOW: Refs not ready after 5 attempts, showing all items');
         setVisibleItems(accessibleItems);
         setOverflowItems([]);
         setIsCalculating(false);
@@ -89,11 +104,12 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
       if (container.offsetWidth === 0) {
         // Container not ready, try again or fallback
         if (calculationAttempts < 5) {
+          if (debug) console.log('⚠️ OVERFLOW: Container width is 0, retrying...');
           setCalculationAttempts((prev) => prev + 1);
           setTimeout(() => calculateOverflow(), 50);
         } else {
           // Fallback: show all items
-          console.log('OverflowNavigation: Container not ready after 5 attempts, showing all items');
+          console.log('❌ OVERFLOW: Container not ready after 5 attempts, showing all items');
           setVisibleItems(accessibleItems);
           setOverflowItems([]);
           setIsCalculating(false);
@@ -108,6 +124,13 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
       const padding = 32; // Container padding
       const availableWidth = containerWidth - moreButtonWidth - padding;
 
+      if (debug) console.log('📏 OVERFLOW: Space calculation', {
+        containerWidth,
+        moreButtonWidth,
+        padding,
+        availableWidth
+      });
+
       // Get widths of all items from hidden container
       const hiddenItems = Array.from(hiddenContainer.children) as HTMLElement[];
       let totalWidth = 0;
@@ -115,33 +138,54 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
 
       // If no hidden items, show all accessible items
       if (hiddenItems.length === 0) {
+        if (debug) console.log('⚠️ OVERFLOW: No hidden items found, showing all items');
         setVisibleItems(accessibleItems);
         setOverflowItems([]);
         setIsCalculating(false);
         return;
       }
 
+      if (debug) console.log('🔢 OVERFLOW: Items to measure', {
+        hiddenItemsCount: hiddenItems.length,
+        accessibleItemsCount: accessibleItems.length
+      });
+
       // Calculate how many items can fit
       for (let i = 0; i < Math.min(hiddenItems.length, accessibleItems.length); i++) {
         const item = hiddenItems[i];
-        if (!item) continue;
+        if (!item) {
+          if (debug) console.log(`⚠️ OVERFLOW: Item at index ${i} is undefined`);
+          continue;
+        }
 
         const itemWidth = item.offsetWidth + 8; // Add margin
+        if (debug && i < 5) console.log(`📏 OVERFLOW: Item ${i} (${accessibleItems[i]?.name}) width: ${itemWidth}px`);
+        
         if (totalWidth + itemWidth <= availableWidth) {
           totalWidth += itemWidth;
           visibleCount++;
         } else {
+          if (debug) console.log(`🛑 OVERFLOW: Stopping at item ${i}, total width would exceed available space`);
           break;
         }
       }
 
+      if (debug) console.log('📊 OVERFLOW: Calculation result', {
+        visibleCount,
+        totalWidth,
+        availableWidth,
+        accessibleItemsCount: accessibleItems.length
+      });
+
       // If all items fit, don't show the More button
       if (visibleCount >= accessibleItems.length) {
+        if (debug) console.log('✅ OVERFLOW: All items fit, no overflow needed');
         setVisibleItems(accessibleItems);
         setOverflowItems([]);
       } else {
         // Ensure at least one item is visible if possible
         visibleCount = Math.max(0, Math.min(visibleCount, accessibleItems.length - 1));
+        if (debug) console.log(`✂️ OVERFLOW: Splitting items - visible: ${visibleCount}, overflow: ${accessibleItems.length - visibleCount}`);
         setVisibleItems(accessibleItems.slice(0, visibleCount));
         setOverflowItems(accessibleItems.slice(visibleCount));
       }
@@ -149,8 +193,9 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
       setIsCalculating(false);
       setCalculationAttempts(0);
       setForceShowAll(false);
+      if (debug) console.log('✅ OVERFLOW: Calculation completed successfully');
     } catch (error) {
-      console.error('Error calculating overflow:', error);
+      console.error('❌ OVERFLOW: Error calculating overflow:', error);
       setHasError(true);
       // Fallback: show all items
       setVisibleItems(accessibleItems);
@@ -158,7 +203,7 @@ const OverflowNavigation: React.FC<OverflowNavigationProps> = ({
       setIsCalculating(false);
       setForceShowAll(true);
     }
-  }, [accessibleItems, calculationAttempts]);
+  }, [accessibleItems, calculationAttempts, debug]);
 
   // Initial calculation and resize handling
   useEffect(() => {

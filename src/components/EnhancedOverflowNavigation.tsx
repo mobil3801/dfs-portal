@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -36,6 +36,20 @@ const EnhancedOverflowNavigation: React.FC<EnhancedOverflowNavigationProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [debugMode] = useState(() => process.env.NODE_ENV === 'development');
+
+  // Log initial items for debugging
+  useEffect(() => {
+    if (debugMode) {
+      console.log('🔍 ENHANCED: EnhancedOverflowNavigation initialized with items:',
+        items.map(item => ({
+          name: item.name,
+          href: item.href,
+          requiredRole: item.requiredRole
+        }))
+      );
+    }
+  }, [items, debugMode]);
 
   const {
     containerRef,
@@ -51,6 +65,21 @@ const EnhancedOverflowNavigation: React.FC<EnhancedOverflowNavigationProps> = ({
     moreButtonWidth,
     padding
   });
+
+  // Log state changes for debugging
+  useEffect(() => {
+    if (debugMode) {
+      console.log('📊 ENHANCED: Navigation state updated', {
+        totalItems: items.length,
+        accessibleItems: accessibleItems.length,
+        visibleItems: visibleItems.length,
+        overflowItems: overflowItems.length,
+        isCalculating,
+        hasOverflow,
+        currentPath: location.pathname
+      });
+    }
+  }, [items.length, accessibleItems.length, visibleItems.length, overflowItems.length, isCalculating, hasOverflow, location.pathname, debugMode]);
 
   const isActiveRoute = (href: string) => {
     return location.pathname.startsWith(href);

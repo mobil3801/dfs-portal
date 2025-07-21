@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   AlertCircle,
   CheckCircle,
@@ -23,10 +25,40 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Monitor,
-  Smartphone,
-  Tablet } from
-'lucide-react';
+  Menu,
+  MoreHorizontal,
+  ClipboardList
+} from 'lucide-react';
+
+// Define navigation items with their icons
+const navigationItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home, requiredRole: null },
+  { name: 'Products', href: '/products', icon: Package, requiredRole: null },
+  { name: 'Sales', href: '/sales', icon: FileText, requiredRole: null },
+  { name: 'Delivery', href: '/delivery', icon: Truck, requiredRole: null },
+  { name: 'Employees', href: '/employees', icon: Users, requiredRole: null },
+  { name: 'Vendors', href: '/vendors', icon: Building, requiredRole: null },
+  { name: 'Orders', href: '/orders', icon: ClipboardList, requiredRole: null },
+  { name: 'Licenses', href: '/licenses', icon: Calendar, requiredRole: null },
+  { name: 'Salary', href: '/salary', icon: DollarSign, requiredRole: null },
+  { name: 'Settings', href: '/settings', icon: Settings, requiredRole: null },
+  { name: 'Admin', href: '/admin', icon: Shield, requiredRole: 'admin' }
+];
+
+// Define navigation items from NavigationDebugger for comparison
+const debuggerItems = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home, requiredRole: null },
+  { name: 'Products', href: '/products', icon: Package, requiredRole: null },
+  { name: 'Sales', href: '/sales', icon: FileText, requiredRole: null },
+  { name: 'Delivery', href: '/delivery', icon: Truck, requiredRole: null },
+  { name: 'Employees', href: '/employees', icon: Users, requiredRole: 'manager' },
+  { name: 'Vendors', href: '/vendors', icon: Building, requiredRole: 'manager' },
+  { name: 'Orders', href: '/orders', icon: Package, requiredRole: 'manager' },
+  { name: 'Licenses', href: '/licenses', icon: Calendar, requiredRole: 'manager' },
+  { name: 'Salary', href: '/salary', icon: DollarSign, requiredRole: 'manager' },
+  { name: 'Settings', href: '/settings', icon: Settings, requiredRole: null },
+  { name: 'Admin', href: '/admin', icon: Shield, requiredRole: 'admin' }
+];
 
 const EnhancedNavigationDebugger: React.FC = () => {
   const {
@@ -38,68 +70,48 @@ const EnhancedNavigationDebugger: React.FC = () => {
     isAdmin,
     isManager,
     authError,
-    refreshUserData
+    refreshUserData,
+    hasPermission
   } = useAuth();
   const location = useLocation();
   const [refreshing, setRefreshing] = useState(false);
   const [showSensitiveData, setShowSensitiveData] = useState(false);
-  const [screenSize, setScreenSize] = useState('desktop');
-  const [navigationVisible, setNavigationVisible] = useState(false);
+  const [showDiscrepancies, setShowDiscrepancies] = useState(true);
 
-  // Navigation items for testing
-  const navigationItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home, requiredRole: null },
-  { name: 'Products', href: '/products', icon: Package, requiredRole: null },
-  { name: 'Sales', href: '/sales', icon: FileText, requiredRole: null },
-  { name: 'Delivery', href: '/delivery', icon: Truck, requiredRole: null },
-  { name: 'Employees', href: '/employees', icon: Users, requiredRole: 'manager' },
-  { name: 'Vendors', href: '/vendors', icon: Building, requiredRole: 'manager' },
-  { name: 'Orders', href: '/orders', icon: Package, requiredRole: 'manager' },
-  { name: 'Licenses', href: '/licenses', icon: Calendar, requiredRole: 'manager' },
-  { name: 'Salary', href: '/salary', icon: DollarSign, requiredRole: 'manager' },
-  { name: 'Settings', href: '/settings', icon: Settings, requiredRole: null },
-  { name: 'Admin', href: '/admin', icon: Shield, requiredRole: 'admin' }];
-
-
-  // Monitor screen size changes
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setScreenSize('mobile');
-      } else if (width < 1024) {
-        setScreenSize('tablet');
-      } else {
-        setScreenSize('desktop');
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Check if navigation is visible
-  useEffect(() => {
-    const checkNavigationVisibility = () => {
-      const navElement = document.querySelector('nav');
-      const navButtons = document.querySelectorAll('[data-testid^="nav-"]');
-
-      setNavigationVisible(navElement !== null && navButtons.length > 0);
-    };
-
-    // Check immediately and then periodically
-    checkNavigationVisibility();
-    const interval = setInterval(checkNavigationVisibility, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Role checking function
+  // Role checking function with enhanced logging
   const canAccessRoute = (requiredRole: string | null) => {
-    if (!requiredRole) return true;
-    if (!isAuthenticated) return false;
-    if (requiredRole === 'admin') return isAdmin();
-    if (requiredRole === 'manager') return isManager();
+    console.log(`🔍 DEBUGGER: Checking access for role: "${requiredRole}"`);
+    
+    if (!requiredRole) {
+      console.log('✅ DEBUGGER: No role required, access granted');
+      return true;
+    }
+    
+    if (!isAuthenticated) {
+      console.log('❌ DEBUGGER: User not authenticated, access denied');
+      return false;
+    }
+    
+    console.log('🔍 DEBUGGER: Authentication details:', {
+      isAuthenticated,
+      userRole: userProfile?.role || 'None',
+      isAdmin: isAdmin(),
+      isManager: isManager()
+    });
+    
+    if (requiredRole.toLowerCase() === 'admin') {
+      const hasAccess = isAdmin();
+      console.log(`${hasAccess ? '✅' : '❌'} DEBUGGER: Admin role check: ${hasAccess}`);
+      return hasAccess;
+    }
+    
+    if (requiredRole.toLowerCase() === 'manager') {
+      const hasAccess = isManager();
+      console.log(`${hasAccess ? '✅' : '❌'} DEBUGGER: Manager role check: ${hasAccess}`);
+      return hasAccess;
+    }
+    
+    console.log('✅ DEBUGGER: Default access granted for authenticated user');
     return true;
   };
 
@@ -107,8 +119,9 @@ const EnhancedNavigationDebugger: React.FC = () => {
     setRefreshing(true);
     try {
       await refreshUserData();
+      console.log('🔄 ENHANCED DEBUGGER: User data refreshed');
     } catch (error) {
-      console.error('Failed to refresh user data:', error);
+      console.error('❌ ENHANCED DEBUGGER: Failed to refresh user data:', error);
     } finally {
       setRefreshing(false);
     }
@@ -117,10 +130,33 @@ const EnhancedNavigationDebugger: React.FC = () => {
   // Get accessible items
   const accessibleItems = navigationItems.filter((item) => canAccessRoute(item.requiredRole));
   const inaccessibleItems = navigationItems.filter((item) => !canAccessRoute(item.requiredRole));
+  
+  // Get accessible items from debugger items for comparison
+  const accessibleDebuggerItems = debuggerItems.filter((item) => canAccessRoute(item.requiredRole));
+  
+  // Find discrepancies between the two sets of navigation items
+  const discrepancies = navigationItems.map(item => {
+    const debuggerItem = debuggerItems.find(di => di.href === item.href);
+    if (!debuggerItem) return null;
+    
+    const hasDiscrepancy = item.requiredRole !== debuggerItem.requiredRole;
+    const topNavAccess = canAccessRoute(item.requiredRole);
+    const debuggerAccess = canAccessRoute(debuggerItem.requiredRole);
+    
+    return hasDiscrepancy ? {
+      name: item.name,
+      href: item.href,
+      topNavRole: item.requiredRole,
+      debuggerRole: debuggerItem.requiredRole,
+      topNavAccess,
+      debuggerAccess,
+      accessDiffers: topNavAccess !== debuggerAccess
+    } : null;
+  }).filter(Boolean);
 
   // Get current page status
   const currentRoute = location.pathname;
-  const currentPageAccess = navigationItems.find((item) => currentRoute.startsWith(item.href));
+  const currentPageItem = navigationItems.find((item) => currentRoute.startsWith(item.href));
 
   // Navigation health check
   const navigationHealth = {
@@ -131,68 +167,35 @@ const EnhancedNavigationDebugger: React.FC = () => {
     hasProfile: !!userProfile,
     hasAccessibleItems: accessibleItems.length > 0,
     hasErrors: !!authError,
-    navigationVisible,
-    overallHealth: isInitialized && !isLoading && isAuthenticated && !!user && accessibleItems.length > 0 && navigationVisible
+    hasDiscrepancies: discrepancies.length > 0,
+    overallHealth: isInitialized && !isLoading && isAuthenticated && !!user && accessibleItems.length > 0 && discrepancies.length === 0
   };
 
-  const getScreenIcon = () => {
-    switch (screenSize) {
-      case 'mobile':return <Smartphone className="h-4 w-4" />;
-      case 'tablet':return <Tablet className="h-4 w-4" />;
-      default:return <Monitor className="h-4 w-4" />;
+  // Log diagnostic information
+  useEffect(() => {
+    console.log('🔍 ENHANCED DEBUGGER: Navigation state', {
+      isAuthenticated,
+      userRole: userProfile?.role || 'None',
+      isAdmin: isAdmin(),
+      isManager: isManager(),
+      accessibleItems: accessibleItems.length,
+      inaccessibleItems: inaccessibleItems.length,
+      discrepancies: discrepancies.length
+    });
+    
+    if (discrepancies.length > 0) {
+      console.warn('⚠️ ENHANCED DEBUGGER: Found role discrepancies between navigation configurations', discrepancies);
     }
-  };
-
-  const runNavigationDiagnostics = () => {
-    const diagnostics = [];
-
-    // Check if navigation container exists
-    const navContainer = document.querySelector('nav');
-    diagnostics.push({
-      test: 'Navigation Container',
-      passed: !!navContainer,
-      message: navContainer ? 'Navigation container found' : 'Navigation container not found'
-    });
-
-    // Check if navigation items exist
-    const navItems = document.querySelectorAll('[data-testid^="nav-"]');
-    diagnostics.push({
-      test: 'Navigation Items',
-      passed: navItems.length > 0,
-      message: `${navItems.length} navigation items found`
-    });
-
-    // Check if user dropdown exists
-    const userDropdown = document.querySelector('[data-testid="user-dropdown"]');
-    diagnostics.push({
-      test: 'User Dropdown',
-      passed: !!userDropdown,
-      message: userDropdown ? 'User dropdown found' : 'User dropdown not found'
-    });
-
-    // Check if mobile menu button exists
-    const mobileMenuButton = document.querySelector('[data-testid="mobile-menu-button"]');
-    diagnostics.push({
-      test: 'Mobile Menu Button',
-      passed: !!mobileMenuButton,
-      message: mobileMenuButton ? 'Mobile menu button found' : 'Mobile menu button not found'
-    });
-
-    return diagnostics;
-  };
-
-  const diagnostics = runNavigationDiagnostics();
+  }, [isAuthenticated, userProfile, accessibleItems.length, inaccessibleItems.length, discrepancies.length]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Enhanced Navigation Debugger</h2>
-          <p className="text-gray-600">Comprehensive navigation analysis and troubleshooting</p>
+          <p className="text-gray-600">Advanced diagnostics for navigation issues</p>
         </div>
         <div className="flex items-center space-x-2">
-          {getScreenIcon()}
-          <span className="text-sm font-medium">{screenSize}</span>
           <Button
             variant="outline"
             size="sm"
@@ -216,13 +219,13 @@ const EnhancedNavigationDebugger: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {navigationHealth.overallHealth ?
-            <CheckCircle className="h-5 w-5 text-green-500" /> :
-            <XCircle className="h-5 w-5 text-red-500" />
+              <CheckCircle className="h-5 w-5 text-green-500" /> :
+              <XCircle className="h-5 w-5 text-red-500" />
             }
-            Navigation Health Status
+            Enhanced Navigation Health
           </CardTitle>
           <CardDescription>
-            Overall navigation system health and visibility
+            Comprehensive navigation system status
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -240,299 +243,221 @@ const EnhancedNavigationDebugger: React.FC = () => {
               <span className="text-sm">Authenticated</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${navigationHealth.navigationVisible ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm">Navigation Visible</span>
+              <div className={`w-3 h-3 rounded-full ${navigationHealth.hasAccessibleItems ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm">Has Menu Items</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${!navigationHealth.hasDiscrepancies ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm">No Discrepancies</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${navigationHealth.hasProfile ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm">Has User Profile</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="diagnostics" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
-          <TabsTrigger value="status">Status</TabsTrigger>
-          <TabsTrigger value="access">Access Control</TabsTrigger>
-          <TabsTrigger value="items">Menu Items</TabsTrigger>
-          <TabsTrigger value="troubleshooting">Troubleshooting</TabsTrigger>
+      {/* Role Discrepancies Alert */}
+      {discrepancies.length > 0 && showDiscrepancies && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-medium">Found {discrepancies.length} role discrepancies between navigation configurations</div>
+            <p className="text-sm mt-1">
+              There are differences in required roles between TopNavigation and NavigationDebugger components.
+              This can cause inconsistent navigation behavior.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setShowDiscrepancies(false)}
+            >
+              Dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Tabs defaultValue="discrepancies" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="discrepancies">Discrepancies</TabsTrigger>
+          <TabsTrigger value="permissions">Permission Tests</TabsTrigger>
+          <TabsTrigger value="overflow">Overflow Analysis</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="diagnostics" className="space-y-4">
+        <TabsContent value="discrepancies" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Navigation Diagnostics</CardTitle>
-              <CardDescription>Automated tests for navigation components</CardDescription>
+              <CardTitle>Navigation Configuration Discrepancies</CardTitle>
+              <CardDescription>
+                Differences between TopNavigation and NavigationDebugger components
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {diagnostics.map((diagnostic, index) =>
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      {diagnostic.passed ?
-                    <CheckCircle className="h-5 w-5 text-green-500" /> :
-                    <XCircle className="h-5 w-5 text-red-500" />
-                    }
-                      <div>
-                        <div className="font-medium">{diagnostic.test}</div>
-                        <div className="text-sm text-gray-600">{diagnostic.message}</div>
-                      </div>
-                    </div>
-                    <Badge variant={diagnostic.passed ? 'default' : 'destructive'}>
-                      {diagnostic.passed ? 'PASS' : 'FAIL'}
-                    </Badge>
-                  </div>
-                )}
-              </div>
+              {discrepancies.length === 0 ? (
+                <div className="bg-green-50 p-4 rounded-md text-green-700">
+                  <CheckCircle className="h-5 w-5 inline-block mr-2" />
+                  No discrepancies found. Navigation configurations are consistent.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>TopNav Role</TableHead>
+                      <TableHead>Debugger Role</TableHead>
+                      <TableHead>Access Differs</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {discrepancies.map((item, index) => (
+                      <TableRow key={index} className={item.accessDiffers ? "bg-red-50" : ""}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.topNavRole || 'null'}</TableCell>
+                        <TableCell>{item.debuggerRole || 'null'}</TableCell>
+                        <TableCell>
+                          {item.accessDiffers ? (
+                            <Badge variant="destructive">Yes</Badge>
+                          ) : (
+                            <Badge variant="outline">No</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="status" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Authentication Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span>Initialized:</span>
-                  <Badge variant={isInitialized ? 'default' : 'secondary'}>
-                    {isInitialized ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Loading:</span>
-                  <Badge variant={isLoading ? 'destructive' : 'default'}>
-                    {isLoading ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Authenticated:</span>
-                  <Badge variant={isAuthenticated ? 'default' : 'destructive'}>
-                    {isAuthenticated ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Has User:</span>
-                  <Badge variant={user ? 'default' : 'destructive'}>
-                    {user ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Has Profile:</span>
-                  <Badge variant={userProfile ? 'default' : 'destructive'}>
-                    {userProfile ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  User Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span>Name:</span>
-                  <span className="font-medium">{user?.Name || 'N/A'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Email:</span>
-                  <span className="font-medium">
-                    {showSensitiveData ? user?.Email || 'N/A' : user?.Email ? '***@***.com' : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Role:</span>
-                  <Badge variant={
-                  isAdmin() ? 'default' :
-                  isManager() ? 'secondary' :
-                  'outline'
-                  }>
-                    {isAdmin() ? 'Admin' : isManager() ? 'Manager' : 'Employee'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>User ID:</span>
-                  <span className="font-medium">{user?.ID || 'N/A'}</span>
-                </div>
-                {showSensitiveData && userProfile &&
-                <div className="flex items-center justify-between">
-                    <span>Profile Role:</span>
-                    <span className="font-medium">{userProfile.role || 'N/A'}</span>
-                  </div>
-                }
-              </CardContent>
-            </Card>
-          </div>
-
-          {authError &&
-          <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Authentication Error:</strong> {authError}
-              </AlertDescription>
-            </Alert>
-          }
-        </TabsContent>
-
-        <TabsContent value="access" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-green-600">Accessible Items ({accessibleItems.length})</CardTitle>
-                <CardDescription>Navigation items the current user can access</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {accessibleItems.map((item) =>
-                  <div key={item.href} className="flex items-center justify-between p-2 bg-green-50 rounded">
-                      <div className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </div>
-                      <Badge variant="outline" className="text-green-600">
-                        {item.requiredRole || 'All'}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-red-600">Inaccessible Items ({inaccessibleItems.length})</CardTitle>
-                <CardDescription>Navigation items the current user cannot access</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {inaccessibleItems.map((item) =>
-                  <div key={item.href} className="flex items-center justify-between p-2 bg-red-50 rounded">
-                      <div className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </div>
-                      <Badge variant="outline" className="text-red-600">
-                        {item.requiredRole || 'All'}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="items" className="space-y-4">
+        <TabsContent value="permissions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>All Navigation Items</CardTitle>
-              <CardDescription>Complete list of navigation items and their access requirements</CardDescription>
+              <CardTitle>Permission Test Matrix</CardTitle>
+              <CardDescription>
+                Test permission checks for different actions and resources
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {navigationItems.map((item) => {
-                  const hasAccess = canAccessRoute(item.requiredRole);
-                  const isCurrentPage = currentRoute.startsWith(item.href);
-
-                  return (
-                    <div key={item.href} className={`flex items-center justify-between p-3 rounded border ${
-                    isCurrentPage ? 'bg-blue-50 border-blue-200' : 'bg-white'}`
-                    }>
-                      <div className="flex items-center gap-3">
-                        <item.icon className="h-5 w-5" />
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-500">{item.href}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">
-                          {item.requiredRole || 'All Users'}
-                        </Badge>
-                        {hasAccess ?
-                        <CheckCircle className="h-5 w-5 text-green-500" /> :
-                        <XCircle className="h-5 w-5 text-red-500" />
-                        }
-                        {isCurrentPage &&
-                        <Badge variant="default">Current</Badge>
-                        }
-                      </div>
-                    </div>);
-
-                })}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Resource</TableHead>
+                    <TableHead>View</TableHead>
+                    <TableHead>Create</TableHead>
+                    <TableHead>Edit</TableHead>
+                    <TableHead>Delete</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {['products', 'employees', 'sales', 'vendors', 'orders'].map((resource) => (
+                    <TableRow key={resource}>
+                      <TableCell className="font-medium capitalize">{resource}</TableCell>
+                      {['view', 'create', 'edit', 'delete'].map((action) => (
+                        <TableCell key={action}>
+                          {hasPermission(action, resource) ? (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Yes
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-red-500">
+                              <XCircle className="h-3 w-3 mr-1" /> No
+                            </Badge>
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="troubleshooting" className="space-y-4">
+        <TabsContent value="overflow" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Common Issues & Solutions</CardTitle>
+              <CardTitle>Overflow Navigation Analysis</CardTitle>
+              <CardDescription>
+                Analyze how navigation items are distributed between visible and overflow menus
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="p-3 bg-gray-50 rounded">
-                  <h4 className="font-medium mb-2">✅ FIXED: Navigation Items Not Showing</h4>
-                  <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Simplified navigation rendering logic</li>
-                    <li>• Removed complex overflow calculations</li>
-                    <li>• Direct item rendering without complex state management</li>
-                    <li>• Improved authentication state handling</li>
-                  </ul>
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-md">
+                <div className="flex items-center space-x-2">
+                  <Package className="h-5 w-5 text-gray-500" />
+                  <span>Products</span>
                 </div>
-
-                <div className="p-3 bg-gray-50 rounded">
-                  <h4 className="font-medium mb-2">Navigation Health Check</h4>
-                  <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Authentication: {navigationHealth.userAuthenticated ? '✅ Active' : '❌ Failed'}</li>
-                    <li>• User Data: {navigationHealth.hasUser ? '✅ Loaded' : '❌ Missing'}</li>
-                    <li>• Navigation Items: {navigationHealth.hasAccessibleItems ? '✅ Available' : '❌ None'}</li>
-                    <li>• Visual Elements: {navigationHealth.navigationVisible ? '✅ Visible' : '❌ Hidden'}</li>
-                  </ul>
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-gray-500" />
+                  <span>Sales</span>
                 </div>
-
-                <div className="p-3 bg-gray-50 rounded">
-                  <h4 className="font-medium mb-2">Performance Improvements</h4>
-                  <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Removed ResizeObserver complexity</li>
-                    <li>• Simplified responsive design</li>
-                    <li>• Eliminated overflow calculation loops</li>
-                    <li>• Fixed mobile navigation state management</li>
-                  </ul>
+                <div className="flex items-center space-x-2">
+                  <Truck className="h-5 w-5 text-gray-500" />
+                  <span>Delivery</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                  <span>More</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm space-y-2 font-mono bg-gray-50 p-3 rounded">
-                <div>Current Path: {currentRoute}</div>
-                <div>Screen Size: {screenSize} ({typeof window !== 'undefined' ? window.innerWidth : 'N/A'}px)</div>
-                <div>Navigation Items: {navigationItems.length}</div>
-                <div>Accessible Items: {accessibleItems.length}</div>
-                <div>Navigation Visible: {navigationVisible ? 'Yes' : 'No'}</div>
-                <div>APIs Available: {typeof window !== 'undefined' && window.ezsite?.apis ? 'Yes' : 'No'}</div>
-                <div>User Agent: {typeof window !== 'undefined' ? window.navigator.userAgent.substring(0, 50) + '...' : 'N/A'}</div>
-                <div>Timestamp: {new Date().toISOString()}</div>
+              <Separator />
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Overflow Calculation Factors</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 rounded">
+                    <h4 className="font-medium">Container Width</h4>
+                    <p className="text-sm text-gray-600">Available space for navigation items</p>
+                    <p className="text-lg font-medium mt-1">Varies by screen size</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded">
+                    <h4 className="font-medium">Item Widths</h4>
+                    <p className="text-sm text-gray-600">Space needed for each navigation item</p>
+                    <p className="text-lg font-medium mt-1">Calculated dynamically</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded">
+                    <h4 className="font-medium">More Button Width</h4>
+                    <p className="text-sm text-gray-600">Space reserved for overflow menu button</p>
+                    <p className="text-lg font-medium mt-1">~100px</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded">
+                    <h4 className="font-medium">Padding</h4>
+                    <p className="text-sm text-gray-600">Extra space reserved in container</p>
+                    <p className="text-lg font-medium mt-1">~32px</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Common Overflow Issues</h3>
+                <ul className="space-y-2 text-sm">
+                  <li className="p-2 bg-red-50 rounded text-red-700">
+                    <strong>Calculation Timing:</strong> Overflow calculation happens before DOM is fully rendered
+                  </li>
+                  <li className="p-2 bg-red-50 rounded text-red-700">
+                    <strong>ResizeObserver Issues:</strong> Browser compatibility problems with ResizeObserver
+                  </li>
+                  <li className="p-2 bg-red-50 rounded text-red-700">
+                    <strong>Race Conditions:</strong> Multiple resize events causing calculation conflicts
+                  </li>
+                  <li className="p-2 bg-red-50 rounded text-red-700">
+                    <strong>Hidden Container Problems:</strong> Issues with measuring hidden items accurately
+                  </li>
+                </ul>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>);
-
+    </div>
+  );
 };
 
 export default EnhancedNavigationDebugger;
