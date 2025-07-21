@@ -29,11 +29,19 @@
     "postcss",
     "tailwind",
     "plpgsql",
-    "psql"
+    "psql",
+    "ossp",
+    "uuid",
+    "JSONB",
+    "BIGINT",
+    "INET",
+    "CASCADE",
+    "REFERENCES"
   ],
   "dictionaries": [
     "web-security",
-    "web-development"
+    "web-development",
+    "postgresql-database"
   ],
   "dictionaryDefinitions": [
     {
@@ -55,7 +63,7 @@
       ]
     },
     {
-      "name": "web-development", 
+      "name": "web-development",
       "words": [
         "supabase",
         "vercel",
@@ -68,6 +76,45 @@
         "tailwind",
         "plpgsql",
         "psql"
+      ]
+    },
+    {
+      "name": "postgresql-database",
+      "words": [
+        "ossp",
+        "uuid",
+        "uuid_generate_v4",
+        "gen_random_uuid",
+        "JSONB",
+        "BIGINT",
+        "INET",
+        "CASCADE",
+        "REFERENCES",
+        "TIMESTAMP",
+        "VARCHAR",
+        "DECIMAL",
+        "INTEGER",
+        "BOOLEAN",
+        "CURRENT_TIMESTAMP",
+        "UNIQUE",
+        "DEFAULT",
+        "PRIMARY",
+        "FOREIGN",
+        "CREATE",
+        "ALTER",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "SELECT",
+        "TRIGGER",
+        "PROCEDURE",
+        "FUNCTION",
+        "RETURNS",
+        "ENUM",
+        "POLICY",
+        "ENABLE",
+        "DISABLE",
+        "COMMENT"
       ]
     }
   ],
