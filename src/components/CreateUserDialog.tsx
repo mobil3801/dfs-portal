@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Mail, Phone, Building2, Shield, Calendar, Eye, EyeOff, Globe } from 'lucide-react';
+import { Loader2, User, Mail, Building2, Shield, Eye, EyeOff, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreateUserDialogProps {
