@@ -230,7 +230,7 @@ class SupabaseConnectionManager {
     try {
       // Simple health check query
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('public.user_profiles')
         .select('id')
         .limit(1);
 

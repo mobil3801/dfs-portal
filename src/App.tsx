@@ -5,7 +5,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ModuleAccessProvider } from '@/contexts/ModuleAccessContext';
-import { GlobalErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorNotificationProvider } from '@/contexts/ErrorNotificationContext';
+import ErrorBoundaryWithNotifications from '@/components/ErrorBoundary';
+import { ErrorNotificationContainer } from '@/components/ErrorNotification';
 import AuthDebugger from '@/components/AuthDebugger';
 
 // Layout
@@ -50,6 +52,7 @@ const ModuleAccessPage = lazy(() => import('@/pages/Admin/ModuleAccessPage'));
 const NavigationDebugPage = lazy(() => import('@/pages/Admin/NavigationDebugPage'));
 const NavigationDiagnosticPage = lazy(() => import('@/pages/Admin/NavigationDiagnosticPage'));
 const DatabaseMonitoring = lazy(() => import('@/pages/Admin/DatabaseMonitoring'));
+const DatabaseDiagnosticsPage = lazy(() => import('@/pages/Admin/DatabaseDiagnosticsPage'));
 const AuditMonitoring = lazy(() => import('@/pages/Admin/AuditMonitoring'));
 const SupabaseTestPage = lazy(() => import('@/pages/supabase-test'));
 
@@ -385,6 +388,11 @@ const AppRouter = () => {
                 <DatabaseMonitoring />
               </Suspense>
             } />
+            <Route path="admin/database-diagnostics" element={
+            <Suspense fallback={<PageLoader />}>
+                <DatabaseDiagnosticsPage />
+              </Suspense>
+            } />
             <Route path="admin/audit" element={
             <Suspense fallback={<PageLoader />}>
                 <AuditMonitoring />
@@ -412,13 +420,16 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <GlobalErrorBoundary>
-          <AuthProvider>
-            <ModuleAccessProvider>
-              <AppRouter />
-            </ModuleAccessProvider>
-          </AuthProvider>
-        </GlobalErrorBoundary>
+        <ErrorNotificationProvider>
+          <ErrorBoundaryWithNotifications componentName="Application">
+            <AuthProvider>
+              <ModuleAccessProvider>
+                <AppRouter />
+              </ModuleAccessProvider>
+            </AuthProvider>
+          </ErrorBoundaryWithNotifications>
+          <ErrorNotificationContainer />
+        </ErrorNotificationProvider>
       </TooltipProvider>
       <Toaster />
     </QueryClientProvider>);

@@ -308,6 +308,12 @@ const AdminPanel = () => {
               onClick={() => navigate('/admin/database')} />
 
             <QuickAdminAction
+              title="Database Schema Diagnostics"
+              description="Diagnose PostgreSQL schema issues (42P01, 42703 errors)"
+              icon={TestTube}
+              onClick={() => navigate('/admin/database-diagnostics')} />
+
+            <QuickAdminAction
               title="SMS Management"
               description="Configure SMS alerts and notifications"
               icon={MessageSquare}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ComponentErrorBoundary } from '@/components/ErrorBoundary';
+import { ComponentErrorBoundary } from '@/components/ErrorBoundary/';
 import ExpensesSection from '@/components/SalesReportSections/ExpensesSection';
 
 interface Expense {

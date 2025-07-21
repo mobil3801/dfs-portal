@@ -105,7 +105,7 @@ export class SupabaseMigrationHelper {
     try {
       // Example: Fetch from user_profiles table with pagination
       let query = supabase
-        .from('user_profiles')
+        .from('public.user_profiles')
         .select('*');
 
       // Apply pagination
@@ -153,7 +153,7 @@ export class SupabaseMigrationHelper {
   private async handleMigrationRequest(id: number, params: ApiCallParams): Promise<ApiResponse> {
     try {
       // Check if required tables exist
-      const tables = ['user_profiles', 'stations', 'products', 'orders', 'employees'];
+      const tables = ['public.user_profiles', 'public.stations', 'public.products', 'public.orders', 'public.employees'];
       const tableChecks = await Promise.all(
         tables.map(async (tableName) => {
           try {
@@ -203,7 +203,7 @@ export class SupabaseMigrationHelper {
     try {
       // Test basic Supabase connectivity
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('public.user_profiles')
         .select('count(*)', { count: 'exact', head: true });
 
       const isHealthy = !error || error.code === 'PGRST116'; // Table not found is OK during setup

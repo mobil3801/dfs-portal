@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
+import { useErrorNotification } from '@/contexts/ErrorNotificationContext';
 import { ShoppingCart, Save, ArrowLeft, Camera, Plus, Minus, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProductSearchBar from '@/components/ProductSearchBar';
@@ -60,6 +60,7 @@ const OrderForm: React.FC = () => {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const { showError, showSuccess, showInfo } = useErrorNotification();
 
   const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
 
@@ -79,11 +80,10 @@ const OrderForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      toast({
-        variant: "destructive",
-        title: "Camera Error",
-        description: "Unable to access camera. Please check permissions."
-      });
+      showError(
+        error as Error,
+        "Unable to access camera. Please check your browser permissions and try again."
+      );
     }
   };
 
@@ -114,24 +114,22 @@ const OrderForm: React.FC = () => {
       setMatchedProducts(products);
 
       if (products.length === 0) {
-        toast({
-          title: "No Products Found",
-          description: `No products found with barcode: ${barcode}`,
-          variant: "destructive"
-        });
+        showInfo(
+          "No Products Found",
+          `No products found with barcode: ${barcode}. Please verify the barcode and try again.`
+        );
       } else {
-        toast({
-          title: "Products Found",
-          description: `Found ${products.length} product(s) matching barcode: ${barcode}`
-        });
+        showSuccess(
+          "Products Found",
+          `Found ${products.length} product(s) matching barcode: ${barcode}`
+        );
       }
     } catch (error) {
       console.error('Error searching products:', error);
-      toast({
-        title: "Search Error",
-        description: "Failed to search for products",
-        variant: "destructive"
-      });
+      showError(
+        error as Error,
+        "Failed to search for products. Please check your connection and try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -200,10 +198,10 @@ const OrderForm: React.FC = () => {
     setMatchedProducts([]);
     setSelectedQuantity({});
 
-    toast({
-      title: "Product Added",
-      description: `${quantity} ${unitType} of ${product.product_name} added to order`
-    });
+    showSuccess(
+      "Product Added",
+      `${quantity} ${unitType} of ${product.product_name} added to order`
+    );
   };
 
   const updateItemQuantity = (itemIndex: number, newQuantity: number) => {
@@ -267,20 +265,18 @@ const OrderForm: React.FC = () => {
     e.preventDefault();
 
     if (formData.items.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one product to the order",
-        variant: "destructive"
-      });
+      showError(
+        new Error("Empty order"),
+        "Please add at least one product to the order before submitting."
+      );
       return;
     }
 
     if (!formData.station) {
-      toast({
-        title: "Error",
-        description: "Please select a delivery station",
-        variant: "destructive"
-      });
+      showError(
+        new Error("Missing station"),
+        "Please select a delivery station for this order."
+      );
       return;
     }
 
@@ -305,19 +301,18 @@ const OrderForm: React.FC = () => {
       const { error } = await window.ezsite.apis.tableCreate('11730', orderData);
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Order created successfully"
-      });
+      showSuccess(
+        "Order Created Successfully",
+        `Order ${orderNumber} has been created for ${formData.station} with ${formData.items.length} items.`
+      );
 
       navigate('/orders');
     } catch (error) {
       console.error('Error creating order:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create order",
-        variant: "destructive"
-      });
+      showError(
+        error as Error,
+        "Failed to create order. Please check your data and try again, or contact support if the problem persists."
+      );
     } finally {
       setLoading(false);
     }

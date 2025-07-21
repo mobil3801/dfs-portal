@@ -20,7 +20,7 @@ import {
   Download,
   Trash2 } from
 'lucide-react';
-import { ComponentErrorBoundary, FormErrorBoundary } from './ErrorBoundary';
+import { ComponentErrorBoundary, FormErrorBoundary } from './ErrorBoundary/';
 import { ErrorLogger } from '@/services/errorLogger';
 import { useToast } from '@/hooks/use-toast';
 

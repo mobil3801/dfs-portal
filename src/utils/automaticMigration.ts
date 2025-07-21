@@ -369,7 +369,7 @@ export class AutomaticMigration {
   async verifyTables(): Promise<{ success: boolean; tablesFound: number; totalTables: number }> {
     this.updateStep('Table Verification', 'running', 'Verifying created tables...');
     
-    const expectedTables = ['stations', 'user_profiles', 'employees', 'audit_logs', 'sms_config', 'sms_history'];
+    const expectedTables = ['public.stations', 'public.user_profiles', 'public.employees', 'public.audit_logs', 'public.sms_config', 'public.sms_history'];
     let tablesFound = 0;
 
     for (const tableName of expectedTables) {
@@ -404,7 +404,7 @@ export class AutomaticMigration {
     try {
       // Insert a sample station
       const { error: stationError } = await supabaseAdmin
-        .from('stations')
+        .from('public.stations')
         .insert([
           {
             station_id: 'STATION_001',
@@ -426,7 +426,7 @@ export class AutomaticMigration {
 
       // Insert a sample user profile
       const { error: userError } = await supabaseAdmin
-        .from('user_profiles')
+        .from('public.user_profiles')
         .insert([
           {
             email: 'admin@dfsportal.com',
