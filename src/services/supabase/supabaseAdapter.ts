@@ -2,19 +2,23 @@ import { supabase } from '@/lib/supabase'
 
 // Table ID to table name mapping
 const TABLE_ID_MAPPING: Record<string | number, string> = {
-  12599: 'stations',
   11725: 'user_profiles',
+  11726: 'products',
   11727: 'employees',
-  12706: 'audit_logs',
-  24201: 'sms_config',
-  24202: 'sms_history',
-  24062: 'sms_history', // Both SMS history tables map to the same Supabase table
-  24061: 'sms_settings',
-  12611: 'alert_settings',
   11731: 'licenses',
+  12196: 'deliveries',
+  12356: 'sales_reports',
+  12599: 'stations',
+  12611: 'alert_settings',
   12612: 'sms_contacts',
   12613: 'alert_history',
+  12706: 'audit_logs',
+  24061: 'sms_settings',
+  24062: 'sms_history', // Both SMS history tables map to the same Supabase table
+  24201: 'sms_config',
+  24202: 'sms_history',
   25712: 'module_access', // Module permissions table
+  26928: 'file_uploads',
   'User': 'auth.users' // Built-in users table
 }
 
@@ -89,8 +93,13 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   private getTableName(tableId: string | number): string {
     const tableName = TABLE_ID_MAPPING[tableId]
     if (!tableName) {
+      console.error('🔍 DEBUG: Table ID mapping failed')
+      console.error('🔍 Requested table ID:', tableId)
+      console.error('🔍 Available mappings:', Object.keys(TABLE_ID_MAPPING))
+      console.error('🔍 Mapping values:', Object.values(TABLE_ID_MAPPING))
       throw new Error(`Unknown table ID: ${tableId}`)
     }
+    console.log('✅ Table ID resolved:', tableId, '→', tableName)
     return tableName
   }
 
@@ -132,6 +141,14 @@ class SupabaseAdapter implements EzsiteApiAdapter {
       const { data, error, count } = await query
 
       if (error) {
+        console.error('🔍 DEBUG: Supabase query error details')
+        console.error('🔍 Table name:', tableName)
+        console.error('🔍 Error message:', error.message)
+        console.error('🔍 Error code:', error.code)
+        console.error('🔍 Query params:', params)
+        if (error.message.includes('does not exist')) {
+          console.error('🔍 This appears to be a missing column/table issue')
+        }
         console.error('Supabase query error:', error)
         return {
           data: null,
@@ -201,17 +218,25 @@ class SupabaseAdapter implements EzsiteApiAdapter {
         }
       }
 
-      if (!data.id) {
+      // Handle both ID and id for compatibility
+      const recordId = data.ID || data.id
+      if (!recordId) {
         return { error: 'Record ID is required for update operations' }
       }
 
       // Add updated_at timestamp
       data.updated_at = new Date().toISOString()
 
+      // Remove ID from data to avoid column conflicts, keep id
+      if (data.ID) {
+        data.id = data.ID
+        delete data.ID
+      }
+
       const { error } = await supabase
         .from(tableName)
         .update(data)
-        .eq('id', data.id)
+        .eq('id', recordId)
 
       if (error) {
         console.error('Supabase update error:', error)
@@ -237,14 +262,16 @@ class SupabaseAdapter implements EzsiteApiAdapter {
         }
       }
 
-      if (!data.id) {
+      // Handle both ID and id for compatibility
+      const recordId = data.ID || data.id
+      if (!recordId) {
         return { error: 'Record ID is required for delete operations' }
       }
 
       const { error } = await supabase
         .from(tableName)
         .delete()
-        .eq('id', data.id)
+        .eq('id', recordId)
 
       if (error) {
         console.error('Supabase delete error:', error)
