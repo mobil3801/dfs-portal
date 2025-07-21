@@ -659,6 +659,7 @@ const RealTimeAdminDashboard = () => {
               <input
                 type="checkbox"
                 id="is_active"
+                aria-label="Active User"
                 checked={editFormData.is_active}
                 onChange={(e) => setEditFormData({ ...editFormData, is_active: e.target.checked })} />
 
