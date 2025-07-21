@@ -27,10 +27,9 @@ import {
   BarChart3,
   Heart,
   Globe,
-  FileText,
   Settings,
-  AlertTriangle } from
-'lucide-react';
+  AlertTriangle
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -1055,7 +1054,8 @@ const AdminDiagnostics: React.FC = () => {
                     <select
                     value={refreshInterval}
                     onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                    className="w-full p-2 border rounded-md">
+                    className="w-full p-2 border rounded-md"
+                    aria-label="Refresh interval">
 
                       <option value={10000}>10 seconds</option>
                       <option value={30000}>30 seconds</option>

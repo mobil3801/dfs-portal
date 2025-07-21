@@ -350,20 +350,20 @@ const LoginPage: React.FC = () => {
               <div className="mt-6">
                 <Separator className="my-4" />
                 <div className="text-center space-y-2">
-                  {authMode === 'login'
-
-
-
-
-
-
-
-
-
-
-
-
-
+                  {authMode === 'login' &&
+                  <div>
+                      <span className="text-sm text-slate-600">Don't have an account? </span>
+                      <Button
+                      variant="link"
+                      className="p-0 h-auto font-semibold text-blue-600 hover:text-blue-800"
+                      disabled={isLoading}
+                      onClick={() => {
+                        setAuthMode('register');
+                        clearForm();
+                      }}>
+                        Create account
+                      </Button>
+                    </div>
                   }
 
                   {authMode === 'register' &&
