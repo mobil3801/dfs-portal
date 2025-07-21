@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,14 +13,83 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  TestTube } from
-'lucide-react';
+  TestTube
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AccessDenied from '@/components/AccessDenied';
 import RealTimeAdminDashboard from '@/components/RealTimeAdminDashboard';
 
+const AdminStatCard = ({
+  title,
+  value,
+  icon: Icon,
+  color,
+  onClick,
+  loading,
+  systemHealth
+}: {
+  title: string;
+  value: number | string;
+  icon: React.ElementType;
+  color: string;
+  onClick?: () => void;
+  loading: boolean;
+  systemHealth: 'healthy' | 'warning' | 'error';
+}) => {
+  // Extract nested ternary into clear conditional logic
+  let displayValue: string | number;
+  if (loading) {
+    displayValue = '...';
+  } else if (systemHealth === 'error') {
+    displayValue = 'Error';
+  } else {
+    displayValue = value;
+  }
+
+  return (
+    <Card
+      className={`p-6 cursor-pointer hover:shadow-lg transition-shadow ${onClick ? 'hover:bg-gray-50' : ''}`}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold">{displayValue}</p>
+        </div>
+        <Icon className={`h-8 w-8 ${color}`} />
+      </div>
+    </Card>
+  );
+};
+
+const QuickAdminAction = ({
+  title,
+  description,
+  icon: Icon,
+  onClick,
+  variant = "default"
+}: {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  onClick: () => void;
+  variant?: "default" | "secondary" | "destructive";
+}) => (
+  <Card className="p-4 hover:shadow-md transition-shadow">
+    <div className="flex items-start space-x-3 mb-3">
+      <Icon className="h-6 w-6 text-blue-600 mt-1" />
+      <div className="flex-1">
+        <h4 className="font-semibold">{title}</h4>
+        <p className="text-sm text-gray-600">{description}</p>
+      </div>
+    </div>
+    <Button onClick={onClick} variant={variant} size="sm" className="w-full">
+      Access {title}
+    </Button>
+  </Card>
+);
 
 interface AdminStats {
   totalUsers: number;
@@ -44,123 +112,76 @@ const AdminPanel = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Redirect if not admin
+  useEffect(() => {
+    const fetchAdminStats = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch user profiles count
+        const usersResponse = await window.ezsite.apis.tablePage(11725, {
+          PageNo: 1,
+          PageSize: 1
+        });
+
+        // Fetch active users count
+        const activeUsersResponse = await window.ezsite.apis.tablePage(11725, {
+          PageNo: 1,
+          PageSize: 1,
+          Filters: [{ name: "is_active", op: "Equal", value: true }]
+        });
+
+        // Fetch today's audit logs
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const auditResponse = await window.ezsite.apis.tablePage(12706, {
+          PageNo: 1,
+          PageSize: 1,
+          Filters: [
+            { name: "event_timestamp", op: "GreaterThanOrEqual", value: today.toISOString() },
+            { name: "event_timestamp", op: "LessThan", value: tomorrow.toISOString() }
+          ]
+        });
+
+        // Fetch total audit logs
+        const totalAuditResponse = await window.ezsite.apis.tablePage(12706, {
+          PageNo: 1,
+          PageSize: 1
+        });
+
+        setStats({
+          totalUsers: usersResponse.data?.VirtualCount || 0,
+          activeUsers: activeUsersResponse.data?.VirtualCount || 0,
+          totalAuditLogs: totalAuditResponse.data?.VirtualCount || 0,
+          todaysActivity: auditResponse.data?.VirtualCount || 0,
+          systemHealth: 'healthy'
+        });
+
+      } catch (error) {
+        console.error('Error fetching admin stats:', error);
+        setStats((prev) => ({ ...prev, systemHealth: 'error' }));
+        toast({
+          title: "Error",
+          description: "Failed to load admin dashboard data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAdmin()) {
+      fetchAdminStats();
+      const interval = setInterval(fetchAdminStats, 2 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin, toast]);
+
   if (!isAdmin()) {
     return <AccessDenied feature="Admin Panel" requiredRole="Administrator" />;
   }
-
-  const fetchAdminStats = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch user profiles count
-      const usersResponse = await window.ezsite.apis.tablePage(11725, {
-        PageNo: 1,
-        PageSize: 1
-      });
-
-      // Fetch active users count
-      const activeUsersResponse = await window.ezsite.apis.tablePage(11725, {
-        PageNo: 1,
-        PageSize: 1,
-        Filters: [{ name: "is_active", op: "Equal", value: true }]
-      });
-
-      // Fetch today's audit logs
-      const today = new Date().toISOString().split('T')[0];
-      const auditResponse = await window.ezsite.apis.tablePage(12706, {
-        PageNo: 1,
-        PageSize: 1,
-        Filters: [{ name: "event_timestamp", op: "StringStartsWith", value: today }]
-      });
-
-      // Fetch total audit logs
-      const totalAuditResponse = await window.ezsite.apis.tablePage(12706, {
-        PageNo: 1,
-        PageSize: 1
-      });
-
-      setStats({
-        totalUsers: usersResponse.data?.VirtualCount || 0,
-        activeUsers: activeUsersResponse.data?.VirtualCount || 0,
-        totalAuditLogs: totalAuditResponse.data?.VirtualCount || 0,
-        todaysActivity: auditResponse.data?.VirtualCount || 0,
-        systemHealth: 'healthy'
-      });
-
-    } catch (error) {
-      console.error('Error fetching admin stats:', error);
-      setStats((prev) => ({ ...prev, systemHealth: 'error' }));
-      toast({
-        title: "Error",
-        description: "Failed to load admin dashboard data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAdminStats();
-    // Refresh every 2 minutes
-    const interval = setInterval(fetchAdminStats, 2 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const AdminStatCard = ({
-    title,
-    value,
-    icon: Icon,
-    color,
-    onClick
-
-
-
-
-
-
-  }: {title: string;value: number | string;icon: any;color: string;onClick?: () => void;}) =>
-  <Card
-    className={`p-6 cursor-pointer hover:shadow-lg transition-shadow ${onClick ? 'hover:bg-gray-50' : ''}`}
-    onClick={onClick}>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold">{loading ? '...' : value}</p>
-        </div>
-        <Icon className={`h-8 w-8 ${color}`} />
-      </div>
-    </Card>;
-
-
-  const QuickAdminAction = ({
-    title,
-    description,
-    icon: Icon,
-    onClick,
-    variant = "default"
-
-
-
-
-
-
-  }: {title: string;description: string;icon: any;onClick: () => void;variant?: "default" | "secondary" | "destructive";}) =>
-  <Card className="p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start space-x-3 mb-3">
-        <Icon className="h-6 w-6 text-blue-600 mt-1" />
-        <div className="flex-1">
-          <h4 className="font-semibold">{title}</h4>
-          <p className="text-sm text-gray-600">{description}</p>
-        </div>
-      </div>
-      <Button onClick={onClick} variant={variant} size="sm" className="w-full">
-        Access {title}
-      </Button>
-    </Card>;
-
 
   const getSystemHealthBadge = () => {
     const health = stats.systemHealth;
@@ -179,7 +200,7 @@ const AdminPanel = () => {
       <div className="bg-gradient-to-r from-red-600 to-purple-600 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold">Real-Time Admin Panel</h1>
         <p className="opacity-90">
-          Administrator: {user?.Name} • Full System Access • Live Database Integration
+          Administrator: {user?.Name || 'Loading...'} • Full System Access • Live Database Integration
         </p>
         <div className="mt-2 flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -206,27 +227,35 @@ const AdminPanel = () => {
           value={stats.totalUsers}
           icon={Users}
           color="text-blue-600"
-          onClick={() => navigate('/admin/users')} />
-
+          onClick={() => navigate('/admin/users')}
+          loading={loading}
+          systemHealth={stats.systemHealth}
+        />
         <AdminStatCard
           title="Active Users"
           value={stats.activeUsers}
           icon={Shield}
-          color="text-green-600" />
-
+          color="text-green-600"
+          loading={loading}
+          systemHealth={stats.systemHealth}
+        />
         <AdminStatCard
           title="Total Audit Logs"
           value={stats.totalAuditLogs}
           icon={Database}
           color="text-purple-600"
-          onClick={() => navigate('/admin/audit')} />
-
+          onClick={() => navigate('/admin/audit')}
+          loading={loading}
+          systemHealth={stats.systemHealth}
+        />
         <AdminStatCard
           title="Today's Activity"
           value={stats.todaysActivity}
           icon={Activity}
-          color="text-orange-600" />
-
+          color="text-orange-600"
+          loading={loading}
+          systemHealth={stats.systemHealth}
+        />
       </div>
 
       {/* Admin Actions */}
