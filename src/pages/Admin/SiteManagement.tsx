@@ -120,7 +120,7 @@ const SiteManagement: React.FC = () => {
   // Load stations from centralized service
   const loadStations = async () => {
     try {
-      console.log('Loading stations from centralized service...');
+      
       const { data, error } = await window.ezsite.apis.tablePage(12599, {
         PageNo: 1,
         PageSize: 100,
@@ -131,7 +131,7 @@ const SiteManagement: React.FC = () => {
 
       if (error) throw error;
 
-      console.log('Loaded stations:', data);
+      
       setStations(data?.List || []);
     } catch (error) {
       console.error('Error loading stations:', error);
@@ -150,7 +150,7 @@ const SiteManagement: React.FC = () => {
   }, []);
 
   const handleEditStation = (station: Station) => {
-    console.log('Editing station:', station);
+    
     setEditingStation(station);
     setDialogMode('edit');
     setStationFormDialogOpen(true);

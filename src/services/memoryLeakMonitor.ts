@@ -186,7 +186,7 @@ export class MemoryLeakMonitor {
   private reportCriticalMemoryLeak(currentMemory: MemoryStats): void {
     const memoryGrowth = currentMemory.usedJSHeapSize - this.baselineMemory!.usedJSHeapSize;
 
-    console.error(`🚨 CRITICAL MEMORY LEAK DETECTED!`);
+    console.error(`CRITICAL MEMORY LEAK DETECTED!`);
     console.error(`Memory grew by ${(memoryGrowth / 1024 / 1024).toFixed(2)}MB`);
     console.error(`Leak occurrences: ${this.leakOccurrences}`);
     console.error(`Consecutive growth periods: ${this.consecutiveGrowthCount}`);
@@ -247,7 +247,7 @@ export class MemoryLeakMonitor {
       });
     }
 
-    console.log(`📊 Tracking component: ${componentName}`, {
+    console.log(`Tracking component: ${componentName}`, {
       totalTracked: this.components.size,
       memoryOnMount: memoryStats ? `${(memoryStats.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB` : 'N/A'
     });
@@ -296,7 +296,7 @@ export class MemoryLeakMonitor {
 
     tracker.leakReports.push(leakReport);
 
-    console.warn(`🚨 Potential memory leak detected in ${componentName}:`, {
+    console.warn(`Potential memory leak detected in ${componentName}:`, {
       type: leakType,
       details: metadata,
       totalLeaksForComponent: tracker.leakReports.length

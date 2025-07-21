@@ -56,8 +56,6 @@ export const RoleManager: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('🔄 Fetching users for role management...');
-
       // Fetch all user profiles
       const profileResponse = await supabaseAdapter.tablePage(11725, {
         PageNo: 1,
@@ -70,13 +68,12 @@ export const RoleManager: React.FC = () => {
       }
 
       const profiles = profileResponse.data?.List || [];
-      console.log('✅ Fetched user profiles:', profiles.length);
 
       // Get Supabase auth users to cross-reference
       const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authError) {
-        console.warn('⚠️ Could not fetch auth users for role comparison:', authError);
+        console.warn('Could not fetch auth users for role comparison:', authError);
       }
 
       // Create auth users lookup for role comparison
@@ -109,10 +106,9 @@ export const RoleManager: React.FC = () => {
       });
 
       setUsers(usersWithProfiles);
-      console.log('✅ Users loaded successfully:', usersWithProfiles.length);
 
     } catch (err) {
-      console.error('❌ Error fetching users:', err);
+      console.error('Error fetching users:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch users';
       setError(errorMessage);
       toast({
@@ -133,8 +129,6 @@ export const RoleManager: React.FC = () => {
       setIsUpdating(prev => ({ ...prev, [userId]: true }));
       setError(null);
 
-      console.log('🔄 Updating role for user:', userId, 'to:', newRole);
-
       const userToUpdate = users.find(u => u.id === userId);
       if (!userToUpdate) {
         throw new Error('User not found');
@@ -149,8 +143,6 @@ export const RoleManager: React.FC = () => {
         throw new Error(`Database update failed: ${updateResponse.error}`);
       }
 
-      console.log('✅ Database role updated successfully');
-
       // Update Supabase auth metadata if user has email
       if (userToUpdate.email && userToUpdate.email.includes('@')) {
         try {
@@ -164,16 +156,14 @@ export const RoleManager: React.FC = () => {
             );
 
             if (authUpdateError) {
-              console.warn('⚠️ Auth metadata update failed:', authUpdateError);
+              console.warn('Auth metadata update failed:', authUpdateError);
               // Don't throw error, database update succeeded
-            } else {
-              console.log('✅ Auth metadata updated successfully');
             }
           } else {
-            console.warn('⚠️ Auth user not found for email:', userToUpdate.email);
+            console.warn('Auth user not found for email:', userToUpdate.email);
           }
         } catch (authErr) {
-          console.warn('⚠️ Auth metadata update error:', authErr);
+          console.warn('Auth metadata update error:', authErr);
           // Continue, database update succeeded
         }
       }
@@ -192,10 +182,8 @@ export const RoleManager: React.FC = () => {
         variant: "default"
       });
 
-      console.log('✅ Role update completed successfully');
-
     } catch (err) {
-      console.error('❌ Error updating user role:', err);
+      console.error('Error updating user role:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update role';
       setError(errorMessage);
       toast({
@@ -220,13 +208,11 @@ export const RoleManager: React.FC = () => {
         throw new Error('User not found');
       }
 
-      console.log('🔄 Synchronizing role for user:', userToSync.email);
-
       // Use the database role as the source of truth
       await updateUserRole(userId, userToSync.role);
 
     } catch (err) {
-      console.error('❌ Error synchronizing user role:', err);
+      console.error('Error synchronizing user role:', err);
       toast({
         title: "Sync Failed",
         description: err instanceof Error ? err.message : 'Failed to synchronize role',

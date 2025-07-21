@@ -110,8 +110,7 @@ const OrderList: React.FC = () => {
       navigate(`/orders/${orderId}/edit`);
 
 
-      // Log for debugging
-      console.log('Navigating to edit order:', orderId, order);
+      
     } catch (error) {
       console.error('Error navigating to edit form:', error);
       toast({

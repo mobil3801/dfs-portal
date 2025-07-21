@@ -48,7 +48,7 @@ class EnhancedClickSendSMSService {
       // The base service auto-initializes with provided credentials
       console.log('🔧 Enhanced ClickSend SMS service initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize enhanced SMS service:', error);
+      console.error('Failed to initialize enhanced SMS service:', error);
     }
   }
 

@@ -160,7 +160,7 @@ const MoreMenuDropdown: React.FC<MoreMenuDropdownProps> = ({
 };
 
 const TopNavigation = () => {
-  const { user, logout, isAdmin, isManager, isAuthenticated, isLoading, isInitialized } = useAuth();
+  const { user, userProfile, logout, isAdmin, isManager, isAuthenticated, isLoading, isInitialized } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -298,73 +298,28 @@ const TopNavigation = () => {
     return location.pathname.startsWith(href);
   };
 
-  // Enhanced role checking with better fallbacks and detailed logging
+  // Enhanced role checking with better fallbacks
   const canAccessRoute = (requiredRole: string | null) => {
-    // Always log role checks for debugging
-    const shouldLog = true;
-    
-    // Get user role for logging
-    let userRole = 'None';
-    if (user) {
-      if (isAdmin()) {
-        userRole = 'Admin';
-      } else if (isManager()) {
-        userRole = 'Manager';
-      } else {
-        userRole = 'Employee';
-      }
-    }
-    
-    // Log the item being checked
-    console.log(`🔍 NAV DEBUG: Checking access for route with requiredRole: "${requiredRole}"`);
-    
     // Allow access if no role is required
     if (!requiredRole) {
-      console.log('✅ NAV DEBUG: No role required, access granted');
       return true;
     }
 
     // Ensure user is authenticated
     if (!isAuthenticated) {
-      console.log('❌ NAV DEBUG: User not authenticated, access denied');
       return false;
     }
 
-    // Log detailed information about the access check
-    console.log('🔍 NAV DEBUG: canAccessRoute check:', {
-      requiredRole,
-      isAuthenticated,
-      isAdmin: isAdmin(),
-      isManager: isManager(),
-      userRole,
-      userProfileRole: userProfile?.role || 'Unknown',
-      userProfileRoleType: userProfile ? typeof userProfile.role : 'N/A'
-    });
-
     // Check specific roles (case-insensitive comparison)
     if (requiredRole.toLowerCase() === 'admin') {
-      const hasAccess = isAdmin();
-      console.log(`${hasAccess ? '✅' : '❌'} NAV DEBUG: Admin role check: ${hasAccess}`);
-      console.log(`🔍 NAV DEBUG: isAdmin() implementation check:`, {
-        userProfileRole: userProfile?.role,
-        checkResult: userProfile?.role === 'Administrator' || userProfile?.role === 'Admin'
-      });
-      return hasAccess;
+      return isAdmin();
     }
     
     if (requiredRole.toLowerCase() === 'manager') {
-      const hasAccess = isManager();
-      console.log(`${hasAccess ? '✅' : '❌'} NAV DEBUG: Manager role check: ${hasAccess}`);
-      console.log(`🔍 NAV DEBUG: isManager() implementation check:`, {
-        userProfileRole: userProfile?.role,
-        checkResult: userProfile?.role === 'Management' || userProfile?.role === 'Manager' ||
-                    userProfile?.role === 'Administrator' || userProfile?.role === 'Admin'
-      });
-      return hasAccess;
+      return isManager();
     }
 
     // Default to allowing access for authenticated users
-    console.log('✅ NAV DEBUG: Default access granted for authenticated user');
     return true;
   };
 

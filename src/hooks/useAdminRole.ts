@@ -34,35 +34,22 @@ export const useAdminRole = (): UseAdminRoleReturn => {
    */
   const checkAdminStatus = useCallback((): boolean => {
     try {
-      console.log('🔍 DEBUG - useAdminRole checkAdminStatus called');
-      
       if (!isAuthenticated || !user || !userProfile) {
-        console.log('❌ DEBUG - Not authenticated or missing user data');
         return false;
       }
 
       // Use legacy isAdmin() method first for backward compatibility
       const legacyAdminCheck = isAdmin();
-      console.log('🔍 DEBUG - Legacy admin check result:', legacyAdminCheck);
 
       // Use new dual role checking for enhanced verification
       const dualRoleAdminCheck = checkRoleFromBothSources('admin');
-      console.log('🔍 DEBUG - Dual role admin check result:', dualRoleAdminCheck);
 
       // Admin if either method returns true (backward compatibility)
       const finalResult = legacyAdminCheck || dualRoleAdminCheck;
-      
-      console.log('✅ DEBUG - Final admin status:', {
-        legacyAdminCheck,
-        dualRoleAdminCheck,
-        finalResult,
-        userRole: userProfile?.role,
-        userId: user?.ID
-      });
 
       return finalResult;
     } catch (err) {
-      console.error('❌ Error checking admin status:', err);
+      console.error('Error checking admin status:', err);
       setError(err instanceof Error ? err.message : 'Failed to check admin status');
       return false;
     }
@@ -72,15 +59,13 @@ export const useAdminRole = (): UseAdminRoleReturn => {
    * Refresh admin status and update internal state
    */
   const refreshAdminStatus = useCallback(() => {
-    console.log('🔄 Refreshing admin status...');
     setError(null);
     
     try {
       const newAdminStatus = checkAdminStatus();
       setAdminStatus(newAdminStatus);
-      console.log('✅ Admin status refreshed:', newAdminStatus);
     } catch (err) {
-      console.error('❌ Error refreshing admin status:', err);
+      console.error('Error refreshing admin status:', err);
       setError(err instanceof Error ? err.message : 'Failed to refresh admin status');
       setAdminStatus(false);
     }
@@ -91,7 +76,7 @@ export const useAdminRole = (): UseAdminRoleReturn => {
    */
   const handleSynchronizeRoles = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) {
-      console.log('⚠️ Cannot synchronize roles: Not authenticated');
+      console.warn('Cannot synchronize roles: Not authenticated');
       return;
     }
 
@@ -99,15 +84,13 @@ export const useAdminRole = (): UseAdminRoleReturn => {
     setError(null);
 
     try {
-      console.log('🔄 Starting role synchronization from useAdminRole...');
       await synchronizeRoles();
       
       // Refresh admin status after synchronization
       refreshAdminStatus();
       
-      console.log('✅ Role synchronization completed successfully');
     } catch (err) {
-      console.error('❌ Role synchronization failed:', err);
+      console.error('Role synchronization failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to synchronize roles');
     } finally {
       setIsLoading(false);
@@ -118,7 +101,6 @@ export const useAdminRole = (): UseAdminRoleReturn => {
    * Update admin status when authentication or user data changes
    */
   useEffect(() => {
-    console.log('🔄 useAdminRole: Auth state changed, updating admin status');
     refreshAdminStatus();
   }, [refreshAdminStatus, isAuthenticated, user, userProfile]);
 
@@ -127,7 +109,6 @@ export const useAdminRole = (): UseAdminRoleReturn => {
    */
   useEffect(() => {
     if (isAuthenticated && user && userProfile && !authLoading) {
-      console.log('🔄 useAdminRole: Auto-synchronizing roles on load');
       handleSynchronizeRoles();
     }
   }, [isAuthenticated, user, userProfile, authLoading]); // Only run when these dependencies change

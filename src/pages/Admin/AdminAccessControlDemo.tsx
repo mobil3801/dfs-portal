@@ -104,7 +104,7 @@ const AdminAccessControlDemo: React.FC = () => {
       };
 
       setDemoResults(results);
-      console.log('🔍 Role Test Results:', results);
+      
       
     } catch (error) {
       console.error('❌ Error running role tests:', error);
@@ -122,11 +122,11 @@ const AdminAccessControlDemo: React.FC = () => {
    */
   const testSynchronization = async () => {
     try {
-      console.log('🔄 Testing role synchronization...');
+      
       await synchronizeRoles();
       await hookSyncRoles();
       await runRoleTests();
-      console.log('✅ Synchronization test completed');
+      
     } catch (error) {
       console.error('❌ Synchronization test failed:', error);
     }

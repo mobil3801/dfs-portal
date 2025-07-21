@@ -186,10 +186,10 @@ class DatabaseConnectionManager {
 
     // Check for connection pressure
     if (stats.connectionPressure >= this.alertThresholds.critical) {
-      console.error('🚨 CRITICAL: Database connection usage is critically high!', stats);
+      console.error('CRITICAL: Database connection usage is critically high!', stats);
       this.triggerEmergencyCleanup();
     } else if (stats.connectionPressure >= this.alertThresholds.warning) {
-      console.warn('⚠️ WARNING: Database connection usage is high', stats);
+      console.warn('WARNING: Database connection usage is high', stats);
       this.optimizeConnections();
     }
 

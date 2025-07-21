@@ -1,25 +1,25 @@
 import { supabase } from '@/lib/supabase'
 
-// Table ID to table name mapping
+// Table ID to table name mapping - Updated for UUID-based business management schema
 const TABLE_ID_MAPPING: Record<string | number, string> = {
-  11725: 'user_profiles',
-  11726: 'products',
-  11727: 'employees',
-  11731: 'licenses',
-  12196: 'deliveries',
-  12356: 'sales_reports',
-  12599: 'stations',
-  12611: 'alert_settings',
-  12612: 'sms_contacts',
-  12613: 'alert_history',
-  12706: 'audit_logs',
-  24061: 'sms_settings',
-  24062: 'sms_history', // Both SMS history tables map to the same Supabase table
-  24201: 'sms_config',
-  24202: 'sms_history',
-  25712: 'module_access', // Module permissions table
-  26928: 'file_uploads',
-  'User': 'auth.users' // Built-in users table
+  11725: 'user_profiles',     // User profiles with UUID foreign keys
+  11726: 'products',          // Products management
+  11727: 'employees',         // Employee management
+  11731: 'licenses',          // License tracking
+  12196: 'deliveries',        // Delivery management
+  12356: 'sales_reports',     // Sales reporting
+  12599: 'stations',          // Station management
+  12611: 'alert_settings',    // Alert configuration
+  12612: 'sms_contacts',      // SMS contact management
+  12613: 'alert_history',     // Alert history
+  12706: 'audit_logs',        // Audit logging
+  24061: 'sms_settings',      // SMS provider settings
+  24062: 'sms_history',       // SMS delivery history
+  24201: 'sms_config',        // SMS configuration
+  24202: 'sms_history',       // Alternative SMS history mapping
+  25712: 'module_access',     // Module permissions
+  26928: 'file_uploads',      // File upload tracking
+  'User': 'auth.users'        // Supabase auth users (UUID-based)
 }
 
 // Interface matching the existing window.ezsite.apis
@@ -93,13 +93,12 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   private getTableName(tableId: string | number): string {
     const tableName = TABLE_ID_MAPPING[tableId]
     if (!tableName) {
-      console.error('🔍 DEBUG: Table ID mapping failed')
-      console.error('🔍 Requested table ID:', tableId)
-      console.error('🔍 Available mappings:', Object.keys(TABLE_ID_MAPPING))
-      console.error('🔍 Mapping values:', Object.values(TABLE_ID_MAPPING))
+      console.error('Table ID mapping failed')
+      console.error('Requested table ID:', tableId)
+      console.error('Available mappings:', Object.keys(TABLE_ID_MAPPING))
+      console.error('Mapping values:', Object.values(TABLE_ID_MAPPING))
       throw new Error(`Unknown table ID: ${tableId}`)
     }
-    console.log('✅ Table ID resolved:', tableId, '→', tableName)
     return tableName
   }
 
@@ -141,13 +140,13 @@ class SupabaseAdapter implements EzsiteApiAdapter {
       const { data, error, count } = await query
 
       if (error) {
-        console.error('🔍 DEBUG: Supabase query error details')
-        console.error('🔍 Table name:', tableName)
-        console.error('🔍 Error message:', error.message)
-        console.error('🔍 Error code:', error.code)
-        console.error('🔍 Query params:', params)
+        console.error('Supabase query error details')
+        console.error('Table name:', tableName)
+        console.error('Error message:', error.message)
+        console.error('Error code:', error.code)
+        console.error('Query params:', params)
         if (error.message.includes('does not exist')) {
-          console.error('🔍 This appears to be a missing column/table issue')
+          console.error('Missing column/table detected')
         }
         console.error('Supabase query error:', error)
         return {

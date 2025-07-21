@@ -44,12 +44,12 @@ export interface SinchClickSendConfig extends ClickSendConfig {} // Deprecated a
 // Legacy SMS Service class that redirects to ClickSend
 class LegacySMSService {
   constructor() {
-    console.log('🔄 Legacy SMS Service initialized - All requests will be handled by ClickSend');
+    console.log('Legacy SMS Service initialized - All requests will be handled by ClickSend');
   }
 
   // All methods redirect to ClickSend service
   async configure(config: SinchClickSendConfig | ClickSendConfig) {
-    console.log('🔄 Redirecting configuration to ClickSend service');
+    console.log('Redirecting configuration to ClickSend service');
     return clickSendSmsService.configure(config);
   }
 
@@ -121,7 +121,7 @@ class LegacySMSService {
 // Legacy SMS Service with production features
 class LegacyProductionSMSService extends LegacySMSService {
   async loadEnvironmentConfig(): Promise<void> {
-    console.log('🔄 Legacy production service redirecting to ClickSend production service');
+    console.log('Legacy production service redirecting to ClickSend production service');
     // Always use ClickSend with provided credentials
     await clickSendSmsService.loadConfiguration();
   }

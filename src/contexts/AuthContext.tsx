@@ -7,15 +7,15 @@ import AuditLoggerService from '@/services/auditLogger';
 const auditLogger = AuditLoggerService.getInstance();
 
 interface User {
-  ID: number;
+  ID: string; // Changed to UUID string
   Name: string;
   Email: string;
   CreateTime: string;
 }
 
 interface UserProfile {
-  id: number;
-  user_id: number;
+  id: string; // Changed to UUID string
+  user_id: string; // Changed to UUID string
   role: string;
   station: string;
   employee_id: string;
@@ -23,7 +23,7 @@ interface UserProfile {
   hire_date: string;
   is_active: boolean;
   detailed_permissions: any;
-  profile_image_id?: number | null;
+  profile_image_id?: string | null; // Changed to UUID string
 }
 
 interface AuthContextType {
@@ -50,8 +50,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Default guest user profile for non-authenticated users
 const GUEST_PROFILE: UserProfile = {
-  id: 0,
-  user_id: 0,
+  id: '00000000-0000-0000-0000-000000000000',
+  user_id: '00000000-0000-0000-0000-000000000000',
   role: 'Guest',
   station: '',
   employee_id: '',
@@ -79,63 +79,47 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
   const safeFetchUserData = async (showErrors = false): Promise<{success: boolean;userData?: User;}> => {
     try {
-      console.log('🔄 Attempting to fetch user data...');
-
       // Get current user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       // Handle response with no data (user not authenticated)
       if (!user || authError) {
-        console.log('👤 No user data - user not authenticated');
         setUser(null);
         setUserProfile(GUEST_PROFILE);
         setAuthError(null);
         return { success: false };
       }
 
-      // Log user metadata for debugging
-      console.log('🔍 DEBUG - Supabase user data:', {
-        id: user.id,
-        email: user.email,
-        metadata: user.user_metadata,
-        appMetadata: user.app_metadata,
-        created_at: user.created_at
-      });
-
       // Extract role from Supabase auth metadata (dual role storage)
       const authMetadataRole = user.user_metadata?.role || user.app_metadata?.role;
-      console.log('🔍 DEBUG - Auth metadata role:', authMetadataRole);
 
-      // Convert Supabase user to our User interface
+      // Convert Supabase user to our User interface (now UUID-based)
       const userData: User = {
-        ID: parseInt(user.id.replace(/[^0-9]/g, '').slice(-8)), // Convert UUID to number for compatibility
+        ID: user.id, // Use actual UUID from Supabase Auth - no conversion!
         Name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown User',
         Email: user.email || '',
         CreateTime: user.created_at || new Date().toISOString()
       };
 
-      console.log('✅ User data fetched successfully:', userData);
       setUser(userData);
 
-      // Fetch user profile with retries
+      // Fetch user profile with retries using proper UUID
       try {
-        console.log('🔄 Fetching user profile for user ID:', userData.ID);
 
         const profileResponse = await supabaseAdapter.tablePage(11725, {
           PageNo: 1,
           PageSize: 1,
           Filters: [
-          { name: "user_id", op: "Equal", value: userData.ID }]
+          { name: "user_id", op: "Equal", value: userData.ID }] // Now using actual UUID
 
         });
 
         if (profileResponse.error) {
-          console.log('⚠️ Profile fetch error:', profileResponse.error);
           // Use default profile for authenticated user without profile
           setUserProfile({
-            id: 0,
+            id: userData.ID, // Use user's UUID as profile ID
             user_id: userData.ID,
-            role: 'Employee',
+            role: 'employee',
             station: 'MOBIL',
             employee_id: '',
             phone: '',
@@ -146,24 +130,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
           });
         } else if (profileResponse.data?.List?.length > 0) {
           const profile = profileResponse.data.List[0];
-          console.log('✅ User profile found:', profile);
-          console.log('🔍 DEBUG - Role analysis:', {
-            rawRole: profile.role,
-            roleType: typeof profile.role,
-            roleLength: profile.role?.length,
-            trimmedRole: profile.role?.trim(),
-            isAdminCheck: profile.role === 'admin',
-            isAdministratorCheck: profile.role === 'Administrator',
-            isAdminUpperCheck: profile.role === 'Admin'
-          });
           setUserProfile(profile);
         } else {
-          console.log('⚠️ No profile found, creating default profile');
           // Create default profile for user without one
           setUserProfile({
-            id: 0,
+            id: userData.ID, // Use user's UUID as profile ID
             user_id: userData.ID,
-            role: 'Employee',
+            role: 'employee',
             station: 'MOBIL',
             employee_id: '',
             phone: '',
@@ -174,12 +147,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
           });
         }
       } catch (profileError) {
-        console.log('⚠️ Profile fetch failed, using default:', profileError);
         // Use default profile if profile fetch fails
         setUserProfile({
-          id: 0,
+          id: userData.ID, // Use user's UUID as profile ID
           user_id: userData.ID,
-          role: 'Employee',
+          role: 'employee',
           station: 'MOBIL',
           employee_id: '',
           phone: '',
@@ -194,7 +166,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       return { success: true, userData };
 
     } catch (error) {
-      console.error('❌ Error fetching user data:', error);
+      console.error('Error fetching user data:', error);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -211,23 +183,19 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   };
 
   const refreshUserData = async (): Promise<void> => {
-    console.log('🔄 Refreshing user data...');
     setIsLoading(true);
     await safeFetchUserData(true);
     setIsLoading(false);
   };
 
   const initializeAuth = async () => {
-    console.log('🚀 Initializing authentication...');
     setIsLoading(true);
 
     try {
-      console.log('✅ Supabase client ready, fetching user data...');
       await safeFetchUserData(false);
 
       // Listen for auth state changes
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await safeFetchUserData(false);
@@ -239,14 +207,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       });
 
     } catch (error) {
-      console.error('❌ Auth initialization failed:', error);
+      console.error('Auth initialization failed:', error);
       setAuthError(`Initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       setUser(null);
       setUserProfile(GUEST_PROFILE);
     } finally {
       setIsLoading(false);
       setIsInitialized(true);
-      console.log('✅ Authentication initialization complete');
     }
   };
 
@@ -257,7 +224,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   const login = async (email: string, password: string): Promise<boolean> => {
     // Prevent multiple concurrent login attempts
     if (loginInProgress) {
-      console.log('⏳ Login already in progress, ignoring duplicate request');
       return false;
     }
 
@@ -265,8 +231,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       setLoginInProgress(true);
       setIsLoading(true);
       setAuthError(null); // Clear any previous errors
-
-      console.log('🔑 Attempting login for:', email);
 
       // Small delay to prevent rapid successive calls
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -277,7 +241,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       });
 
       if (error) {
-        console.log('❌ Login API failed:', error.message);
         await auditLogger.logLogin(email, false, undefined, error.message);
         setAuthError(error.message);
         toast({
@@ -288,15 +251,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         return false;
       }
 
-      console.log('✅ Login API successful, fetching user data...');
-
       // Add delay to ensure server state is updated
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       const userDataResult = await safeFetchUserData(true);
 
       if (userDataResult.success && userDataResult.userData) {
-        console.log('✅ User data fetched successfully after login');
         await auditLogger.logLogin(email, true, userDataResult.userData.ID);
         toast({
           title: "Login Successful",
@@ -304,12 +264,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         });
         return true;
       } else {
-        console.log('❌ Failed to fetch user data after successful login');
         throw new Error('Failed to load user information after login');
       }
 
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setAuthError(errorMessage);
       await auditLogger.logLogin(email, false, undefined, errorMessage);
@@ -327,8 +286,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
   const logout = async (): Promise<void> => {
     try {
-      console.log('🚪 Logging out user...');
-
       // Log logout before clearing user data
       if (user) {
         await auditLogger.logLogout(user.Email, user.ID);
@@ -344,10 +301,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         title: "Logged Out",
         description: "You have been successfully logged out"
       });
-
-      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('⚠️ Logout error (non-critical):', error);
+      console.error('Logout error:', error);
       // Still clear local state even if API call fails
       setUser(null);
       setUserProfile(GUEST_PROFILE);
@@ -360,8 +315,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       setIsLoading(true);
       setAuthError(null);
 
-      console.log('📝 Attempting registration for:', email);
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -373,7 +326,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       });
 
       if (error) {
-        console.log('❌ Registration failed:', error.message);
         await auditLogger.logRegistration(email, false, error.message);
         setAuthError(error.message);
         toast({
@@ -384,7 +336,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         return false;
       }
 
-      console.log('✅ Registration successful');
       await auditLogger.logRegistration(email, true);
       toast({
         title: "Registration Successful",
@@ -393,7 +344,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
       return true;
     } catch (error) {
-      console.error('❌ Registration error:', error);
+      console.error('Registration error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setAuthError(errorMessage);
       await auditLogger.logRegistration(email, false, errorMessage);
@@ -409,33 +360,16 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   };
 
   const hasPermission = (action: string, resource?: string): boolean => {
-    console.log('🔍 DEBUG - hasPermission check:', {
-      action,
-      resource,
-      userProfile: userProfile ? {
-        id: userProfile.id,
-        role: userProfile.role,
-        hasDetailedPermissions: !!userProfile.detailed_permissions
-      } : null
-    });
-
     if (!userProfile) {
-      console.log('❌ DEBUG - Permission denied: No user profile');
       return false;
     }
-    
-    // Log the exact role value for debugging
-    console.log(`🔍 DEBUG - User role: "${userProfile.role}" (type: ${typeof userProfile.role})`);
     
     if (userProfile.role === 'Guest') {
-      console.log('❌ DEBUG - Permission denied: Guest role');
       return false;
     }
 
-    // Admins have all permissions - check case variations
-    const adminRoles = ['Administrator', 'Admin', 'ADMIN', 'administrator'];
-    if (adminRoles.some(role => userProfile.role === role)) {
-      console.log(`✅ DEBUG - Permission granted: Admin role (${userProfile.role})`);
+    // Admins have all permissions - standardized to lowercase
+    if (userProfile.role === 'admin') {
       return true;
     }
 
@@ -444,94 +378,51 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       try {
         let permissions;
         if (typeof userProfile.detailed_permissions === 'string') {
-          console.log('🔍 DEBUG - Parsing permissions from string');
           // Only try to parse if it's a valid JSON string
           if (userProfile.detailed_permissions.trim().startsWith('{') || userProfile.detailed_permissions.trim().startsWith('[')) {
             permissions = JSON.parse(userProfile.detailed_permissions);
-            console.log('✅ DEBUG - Successfully parsed permissions JSON:', permissions);
           } else {
             // Invalid JSON string, skip detailed permissions
-            console.log('⚠️ DEBUG - Invalid JSON string for permissions:', userProfile.detailed_permissions);
             permissions = {};
           }
         } else {
-          console.log('🔍 DEBUG - Using object permissions directly:', userProfile.detailed_permissions);
           permissions = userProfile.detailed_permissions;
         }
 
         if (resource && permissions[resource]) {
-          console.log(`🔍 DEBUG - Found resource "${resource}" in permissions:`, permissions[resource]);
           if (permissions[resource][action]) {
-            console.log(`✅ DEBUG - Permission granted from detailed permissions: ${resource}.${action}`);
             return true;
           }
         }
       } catch (error) {
-        console.warn('❌ DEBUG - Error parsing permissions, using default role-based permissions:', error);
+        console.warn('Error parsing permissions, using default role-based permissions:', error);
       }
     }
 
     // Default permissions for managers - check case variations
-    const managerRoles = ['Management', 'Manager', 'MANAGER', 'management'];
+    const managerRoles = ['manager'];
     if (managerRoles.some(role => userProfile.role === role)) {
       const managerActions = ['view', 'create', 'edit'];
-      const hasAccess = managerActions.includes(action);
-      console.log(`${hasAccess ? '✅' : '❌'} DEBUG - Manager permission for ${action}: ${hasAccess}`);
-      return hasAccess;
+      return managerActions.includes(action);
     }
 
     // Default permissions for employees
     if (userProfile.role === 'Employee') {
-      const hasAccess = action === 'view';
-      console.log(`${hasAccess ? '✅' : '❌'} DEBUG - Employee permission for ${action}: ${hasAccess}`);
-      return hasAccess;
+      return action === 'view';
     }
 
-    console.log(`❌ DEBUG - Permission denied: No matching role rules for role "${userProfile.role}"`);
     return false;
   };
 
   const isAdmin = (): boolean => {
-    console.log('🔍 DEBUG - isAdmin() check:', {
-      userProfile: userProfile ? {
-        id: userProfile.id,
-        role: userProfile.role,
-        roleType: typeof userProfile.role,
-        roleLength: userProfile.role?.length
-      } : null,
-      checking: ['admin', 'Administrator', 'Admin'],
-      exactMatches: {
-        admin: userProfile?.role === 'admin',
-        Administrator: userProfile?.role === 'Administrator',
-        Admin: userProfile?.role === 'Admin'
-      },
-      result: userProfile?.role === 'admin' || userProfile?.role === 'Administrator' || userProfile?.role === 'Admin'
-    });
-    
     // Check both database enum value 'admin' and legacy values for backward compatibility
-    return userProfile?.role === 'admin' ||
-           userProfile?.role === 'Administrator' ||
-           userProfile?.role === 'Admin';
+    return userProfile?.role === 'admin';
   };
 
   // Dual role checking - verify role from both Supabase auth metadata and database
   const checkRoleFromBothSources = (roleToCheck: string): boolean => {
-    console.log('🔍 DEBUG - checkRoleFromBothSources:', {
-      roleToCheck,
-      userProfile: userProfile ? {
-        role: userProfile.role,
-        id: userProfile.id
-      } : null,
-      user: user ? {
-        id: user.ID,
-        metadata: user.user_metadata,
-        appMetadata: user.app_metadata
-      } : null
-    });
-
     // Check if user is authenticated
     if (!user || !userProfile) {
-      console.log('❌ DEBUG - No user or profile for role check');
       return false;
     }
 
@@ -548,15 +439,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     const authRoleMatches = normalizeRole(authMetadataRole) === normalizedRoleToCheck;
     const profileRoleMatches = normalizeRole(profileRole) === normalizedRoleToCheck;
 
-    console.log('🔍 DEBUG - Role comparison:', {
-      authMetadataRole,
-      profileRole,
-      normalizedRoleToCheck,
-      authRoleMatches,
-      profileRoleMatches,
-      result: authRoleMatches || profileRoleMatches
-    });
-
     // Return true if role matches in either source
     return authRoleMatches || profileRoleMatches;
   };
@@ -564,53 +446,34 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   // Synchronize roles between Supabase auth metadata and database
   const synchronizeRoles = async (): Promise<void> => {
     if (!user || !userProfile) {
-      console.log('⚠️ Cannot synchronize roles: No user or profile');
       return;
     }
 
     try {
-      console.log('🔄 Starting role synchronization...');
-      
       // Get current roles from both sources
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const authMetadataRole = currentUser?.user_metadata?.role || currentUser?.app_metadata?.role;
       const profileRole = userProfile.role;
 
-      console.log('🔍 DEBUG - Current roles:', {
-        authMetadataRole,
-        profileRole,
-        needsSync: authMetadataRole !== profileRole
-      });
-
       // If roles don't match, update auth metadata to match database role
       if (authMetadataRole !== profileRole) {
-        console.log('🔄 Synchronizing auth metadata with database role...');
-        
         const { error: updateError } = await supabase.auth.updateUser({
           data: { role: profileRole }
         });
 
         if (updateError) {
-          console.error('❌ Failed to synchronize roles:', updateError);
-        } else {
-          console.log('✅ Roles synchronized successfully');
+          console.error('Failed to synchronize roles:', updateError);
         }
-      } else {
-        console.log('✅ Roles already in sync');
       }
     } catch (error) {
-      console.error('❌ Role synchronization failed:', error);
+      console.error('Role synchronization failed:', error);
     }
   };
 
   const isManager = (): boolean => {
     // Check both database enum values and legacy values for backward compatibility
     return userProfile?.role === 'manager' ||
-           userProfile?.role === 'Management' ||
-           userProfile?.role === 'Manager' ||
-           userProfile?.role === 'admin' ||
-           userProfile?.role === 'Administrator' ||
-           userProfile?.role === 'Admin';
+           userProfile?.role === 'admin';
   };
 
   const value: AuthContextType = {

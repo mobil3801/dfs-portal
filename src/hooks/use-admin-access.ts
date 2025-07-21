@@ -28,8 +28,6 @@ export const useAdminAccess = (): AdminAccessState => {
   });
 
   useEffect(() => {
-    console.log('🔍 Admin access check - User:', user?.Name, 'Profile:', userProfile?.role);
-
     if (isLoading) {
       setState((prev) => ({ ...prev, loading: true }));
       return;
@@ -46,7 +44,6 @@ export const useAdminAccess = (): AdminAccessState => {
     }
 
     if (!isAuthenticated || !user || !userProfile) {
-      console.log('❌ Admin access denied - Not authenticated');
       setState({
         isAdmin: false,
         isManager: false,
@@ -61,13 +58,11 @@ export const useAdminAccess = (): AdminAccessState => {
       return;
     }
 
-    // Check for both "Administrator" and "Admin" roles for backward compatibility
-    const isAdmin = userProfile.role === 'Administrator' || userProfile.role === 'Admin';
-    const isManager = userProfile.role === 'Management' || userProfile.role === 'Manager' || isAdmin;
-    const isEmployee = userProfile.role === 'Employee';
+    // Standardized to lowercase database enum values
+    const isAdmin = userProfile.role === 'admin';
+    const isManager = userProfile.role === 'manager' || isAdmin;
+    const isEmployee = userProfile.role === 'employee';
     const hasAccess = isAdmin || isManager;
-
-    console.log(`✅ Admin access determined - Role: ${userProfile.role}, HasAccess: ${hasAccess}`);
 
     setState({
       isAdmin,

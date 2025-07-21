@@ -96,12 +96,12 @@ const UserManagement: React.FC = () => {
     is_active: true
   });
 
-  const roles = ['Administrator', 'Management', 'Employee'];
+  const roles = ['admin', 'manager', 'employee'];
   const stations = ['ALL', 'MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
 
   const [formData, setFormData] = useState({
     user_id: 0,
-    role: 'Employee',
+    role: 'employee',
     station: 'MOBIL',
     employee_id: '',
     phone: '',
@@ -143,14 +143,14 @@ const UserManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      console.log('Fetching users from production database...');
+      
       const { data: currentUser, error: userError } = await window.ezsite.apis.getUserInfo();
       if (userError) {
-        console.log('User info not available:', userError);
+        
         setUsers([]);
         return;
       }
-      console.log('Current user loaded:', currentUser);
+      
       setUsers([currentUser]);
     } catch (error) {
       console.error('Error fetching current user info:', error);
@@ -160,7 +160,7 @@ const UserManagement: React.FC = () => {
 
   const fetchUserProfiles = async () => {
     try {
-      console.log('Fetching user profiles from production database...');
+      
       const { data, error } = await window.ezsite.apis.tablePage(11725, {
         PageNo: 1,
         PageSize: 100,
@@ -174,7 +174,7 @@ const UserManagement: React.FC = () => {
         throw error;
       }
 
-      console.log('User profiles loaded from database:', data?.List?.length || 0);
+      
       setUserProfiles(data?.List || []);
     } catch (error) {
       console.error('Error fetching user profiles:', error);
@@ -199,7 +199,7 @@ const UserManagement: React.FC = () => {
     }
 
     try {
-      console.log('Creating new user profile:', formData);
+      
       const { error } = await window.ezsite.apis.tableCreate(11725, formData);
       if (error) throw error;
 
@@ -211,7 +211,7 @@ const UserManagement: React.FC = () => {
       setIsAddDialogOpen(false);
       setFormData({
         user_id: generateRandomUserId(),
-        role: 'Employee',
+        role: 'employee',
         station: 'MOBIL',
         employee_id: '',
         phone: '',
@@ -242,7 +242,7 @@ const UserManagement: React.FC = () => {
     }
 
     try {
-      console.log('Updating user profile:', selectedUserProfile.id, formData);
+      
       const { error } = await window.ezsite.apis.tableUpdate(11725, {
         id: selectedUserProfile.id,
         ...formData
@@ -271,7 +271,7 @@ const UserManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user profile? This action cannot be undone.')) return;
 
     try {
-      console.log('Deleting user profile:', profileId);
+      
       const { error } = await window.ezsite.apis.tableDelete(11725, { id: profileId });
       if (error) throw error;
 
@@ -322,7 +322,7 @@ const UserManagement: React.FC = () => {
     setBatchActionLoading(true);
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
-      console.log('Batch editing user profiles:', selectedData.length);
+      
 
       const updates = selectedData.map((profile) => ({
         id: profile.id,
@@ -360,7 +360,7 @@ const UserManagement: React.FC = () => {
     setBatchActionLoading(true);
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
-      console.log('Batch deleting user profiles:', selectedData.length);
+      
 
       for (const profile of selectedData) {
         const { error } = await window.ezsite.apis.tableDelete(11725, { id: profile.id });
@@ -413,9 +413,9 @@ const UserManagement: React.FC = () => {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'Administrator':return 'bg-red-100 text-red-800';
-      case 'Management':return 'bg-blue-100 text-blue-800';
-      case 'Employee':return 'bg-green-100 text-green-800';
+      case 'admin':return 'bg-red-100 text-red-800';
+      case 'manager':return 'bg-blue-100 text-blue-800';
+      case 'employee':return 'bg-green-100 text-green-800';
       default:return 'bg-gray-100 text-gray-800';
     }
   };
@@ -726,7 +726,7 @@ const UserManagement: React.FC = () => {
                   <div>
                     <p className="text-sm text-gray-600">Administrators</p>
                     <p className="text-2xl font-bold">
-                      {userProfiles.filter((p) => p.role === 'Administrator').length}
+                      {userProfiles.filter((p) => p.role === 'admin').length}
                     </p>
                   </div>
                 </div>

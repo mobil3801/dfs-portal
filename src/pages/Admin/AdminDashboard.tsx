@@ -93,9 +93,9 @@ const AdminDashboard: React.FC = () => {
     let intervalId: NodeJS.Timeout | null = null;
 
     if (autoRefresh) {
-      console.log('Starting auto-refresh for admin dashboard with interval:', refreshInterval);
+      
       intervalId = setInterval(() => {
-        console.log('Auto-refreshing dashboard data...');
+        
         fetchDashboardData();
       }, refreshInterval);
     }
@@ -150,7 +150,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchDatabaseStats = async () => {
     try {
-      console.log('Fetching real-time database statistics...');
+      
 
       // Fetch user profiles count (table ID: 11725)
       const { data: userProfilesData, error: userProfilesError } = await window.ezsite.apis.tablePage(11725, {
@@ -226,17 +226,6 @@ const AdminDashboard: React.FC = () => {
       });
       const activeSessions = activeUsersError ? 0 : activeUsersData?.VirtualCount || 0;
 
-      console.log('Real-time database stats loaded:', {
-        totalUsers,
-        totalEmployees,
-        totalProducts,
-        totalSales,
-        totalLicenses,
-        activeSessions,
-        smsAlertsSent,
-        timestamp: new Date().toISOString()
-      });
-
       setDbStats({
         totalUsers,
         totalEmployees,
@@ -253,7 +242,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchRecentActivities = async () => {
     try {
-      console.log('Fetching real-time audit activities...');
+      
 
       // Fetch recent audit logs (table ID: 12706)
       const { data: auditData, error: auditError } = await window.ezsite.apis.tablePage(12706, {
@@ -281,7 +270,7 @@ const AdminDashboard: React.FC = () => {
             type: actionType
           };
         });
-        console.log('Real-time activities loaded:', activities.length, 'activities');
+        
         setRecentActivities(activities);
       } else {
         // Set system startup activity when no audit logs exist
@@ -303,7 +292,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchSystemAlerts = async () => {
     try {
-      console.log('Generating real-time system alerts...');
+      
       const alerts: SystemAlert[] = [];
 
       // Check for expiring licenses
@@ -374,11 +363,7 @@ const AdminDashboard: React.FC = () => {
         resolved: true
       });
 
-      console.log('Real-time alerts generated:', alerts.length, 'alerts', {
-        licenseAlerts: alerts.filter((a) => a.title.includes('License')).length,
-        stockAlerts: alerts.filter((a) => a.title.includes('Stock')).length,
-        systemAlerts: alerts.filter((a) => a.title.includes('System')).length
-      });
+      
       setSystemAlerts(alerts);
     } catch (error) {
       console.error('Error fetching system alerts:', error);

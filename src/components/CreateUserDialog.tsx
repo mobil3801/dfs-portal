@@ -166,20 +166,20 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
         is_active: true,
         detailed_permissions: JSON.stringify({
           dashboard: { view: true, create: false, edit: false, delete: false },
-          products: { view: formData.role !== 'Employee', create: false, edit: false, delete: false },
-          employees: { view: formData.role === 'Administrator', create: false, edit: false, delete: false },
-          sales_reports: { view: true, create: formData.role !== 'Employee', edit: formData.role !== 'Employee', delete: false },
+          products: { view: formData.role !== 'employee', create: false, edit: false, delete: false },
+          employees: { view: formData.role === 'admin', create: false, edit: false, delete: false },
+          sales_reports: { view: true, create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
           vendors: { view: formData.role !== 'Employee', create: false, edit: false, delete: false },
           orders: { view: formData.role !== 'Employee', create: formData.role !== 'Employee', edit: formData.role !== 'Employee', delete: false },
-          licenses: { view: formData.role !== 'Employee', create: false, edit: false, delete: false },
-          salary: { view: formData.role === 'Administrator', create: formData.role === 'Administrator', edit: formData.role === 'Administrator', delete: false },
-          inventory: { view: true, create: formData.role !== 'Employee', edit: formData.role !== 'Employee', delete: false },
-          delivery: { view: formData.role !== 'Employee', create: formData.role !== 'Employee', edit: formData.role !== 'Employee', delete: false },
-          settings: { view: formData.role === 'Administrator', create: false, edit: formData.role === 'Administrator', delete: false },
-          user_management: { view: formData.role === 'Administrator', create: formData.role === 'Administrator', edit: formData.role === 'Administrator', delete: formData.role === 'Administrator' },
-          site_management: { view: formData.role === 'Administrator', create: formData.role === 'Administrator', edit: formData.role === 'Administrator', delete: formData.role === 'Administrator' },
-          system_logs: { view: formData.role === 'Administrator', create: false, edit: false, delete: false },
-          security_settings: { view: formData.role === 'Administrator', create: false, edit: formData.role === 'Administrator', delete: false }
+          licenses: { view: formData.role !== 'employee', create: false, edit: false, delete: false },
+          salary: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: false },
+          inventory: { view: true, create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
+          delivery: { view: formData.role !== 'employee', create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
+          settings: { view: formData.role === 'admin', create: false, edit: formData.role === 'admin', delete: false },
+          user_management: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: formData.role === 'admin' },
+          site_management: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: formData.role === 'admin' },
+          system_logs: { view: formData.role === 'admin', create: false, edit: false, delete: false },
+          security_settings: { view: formData.role === 'admin', create: false, edit: formData.role === 'admin', delete: false }
         })
       };
 
@@ -535,14 +535,14 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">User Management</span>
-                  <Badge variant={formData.role === 'Administrator' ? 'default' : 'secondary'}>
-                    {formData.role === 'Administrator' ? 'Full Access' : 'No Access'}
+                  <Badge variant={formData.role === 'admin' ? 'default' : 'secondary'}>
+                    {formData.role === 'admin' ? 'Full Access' : 'No Access'}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">System Administration</span>
-                  <Badge variant={formData.role === 'Administrator' ? 'default' : 'secondary'}>
-                    {formData.role === 'Administrator' ? 'Full Access' : 'No Access'}
+                  <Badge variant={formData.role === 'admin' ? 'default' : 'secondary'}>
+                    {formData.role === 'admin' ? 'Full Access' : 'No Access'}
                   </Badge>
                 </div>
                 {formData.station === 'ALL' &&

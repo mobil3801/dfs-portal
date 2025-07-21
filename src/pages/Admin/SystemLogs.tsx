@@ -79,7 +79,7 @@ const SystemLogs: React.FC = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      console.log('Fetching audit logs from database...');
+      
       const { data, error } = await window.ezsite.apis.tablePage(12706, {
         PageNo: 1,
         PageSize: 100,
@@ -95,7 +95,7 @@ const SystemLogs: React.FC = () => {
         return;
       }
 
-      console.log('Audit logs data received:', data);
+      
       setLogs(data?.List || []);
     } catch (error) {
       console.error('Error fetching audit logs:', error);

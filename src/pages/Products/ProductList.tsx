@@ -104,7 +104,7 @@ const ProductList: React.FC = () => {
   const loadAllProducts = async () => {
     try {
       setLoading(true);
-
+      
       const { data, error } = await window.ezsite.apis.tablePage('11726', {
         PageNo: 1,
         PageSize: 1000, // Load a large number to get all products
@@ -113,14 +113,18 @@ const ProductList: React.FC = () => {
         Filters: []
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading products:', error);
+        throw error;
+      }
 
-      setAllProducts(data?.List || []);
+      const products = data?.List || [];
+      setAllProducts(products);
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
         title: "Error",
-        description: "Failed to load products",
+        description: `Failed to load products: ${error}`,
         variant: "destructive"
       });
     } finally {
@@ -175,7 +179,6 @@ const ProductList: React.FC = () => {
   const autoAdjustSerialNumbers = async () => {
     try {
       setIsAdjustingSerials(true);
-      console.log('Starting auto-adjustment of serial numbers...');
 
       // Get all products ordered by ID (creation order)
       const { data, error } = await window.ezsite.apis.tablePage('11726', {
@@ -189,7 +192,6 @@ const ProductList: React.FC = () => {
       if (error) throw error;
 
       const products = data?.List || [];
-      console.log(`Found ${products.length} products for serial number adjustment`);
 
       // Check if serial numbers need adjustment
       let needsAdjustment = false;
@@ -199,13 +201,11 @@ const ProductList: React.FC = () => {
 
         if (currentSerial !== expectedSerial) {
           needsAdjustment = true;
-          console.log(`Product ID ${products[i].ID} has serial ${currentSerial}, should be ${expectedSerial}`);
           break;
         }
       }
 
       if (!needsAdjustment) {
-        console.log('Serial numbers are already continuous, no adjustment needed');
         return;
       }
 
@@ -216,7 +216,6 @@ const ProductList: React.FC = () => {
 
         // Only update if serial number is different
         if (currentSerial !== newSerial) {
-          console.log(`Updating product ID ${product.ID} serial from ${currentSerial} to ${newSerial}`);
 
           const updateData = {
             ID: product.ID,
@@ -246,7 +245,7 @@ const ProductList: React.FC = () => {
 
           const { error: updateError } = await window.ezsite.apis.tableUpdate('11726', updateData);
           if (updateError) {
-            console.error(`Failed to update serial for product ID ${product.ID}:`, updateError);
+            console.error('Error updating product serial:', updateError);
             throw updateError;
           }
         }
@@ -255,7 +254,6 @@ const ProductList: React.FC = () => {
       // Wait for all updates to complete
       await Promise.all(updatePromises);
 
-      console.log('Serial number auto-adjustment completed successfully');
       toast({
         title: "Serial Numbers Updated",
         description: "Product serial numbers have been automatically adjusted to maintain continuity.",
@@ -263,7 +261,7 @@ const ProductList: React.FC = () => {
       });
 
     } catch (error) {
-      console.error('Error during serial number auto-adjustment:', error);
+      console.error('Error adjusting serial numbers:', error);
       toast({
         title: "Warning",
         description: "Failed to auto-adjust serial numbers. Please check the system logs.",
@@ -276,10 +274,8 @@ const ProductList: React.FC = () => {
   };
 
   const handleDelete = async (productId: number) => {
-    console.log('handleDelete called for product ID:', productId);
-
     // Check if user is admin
-    if (userProfile?.role !== 'Administrator' && userProfile?.role !== 'Admin') {
+    if (userProfile?.role !== 'admin') {
       toast({
         title: "Access Denied",
         description: "Only administrators can delete products.",
@@ -290,23 +286,18 @@ const ProductList: React.FC = () => {
 
     // Show confirmation dialog
     const confirmed = confirm('Are you sure you want to delete this product? This action cannot be undone. Serial numbers will be automatically adjusted to maintain continuity.');
-    console.log('User confirmed deletion:', confirmed);
 
     if (!confirmed) {
-      console.log('Deletion cancelled by user');
       return;
     }
 
     try {
-      console.log('Attempting to delete product with ID:', productId);
       const { error } = await window.ezsite.apis.tableDelete('11726', { ID: productId });
 
       if (error) {
-        console.error('API returned error:', error);
+        console.error('Error deleting product:', error);
         throw error;
       }
-
-      console.log('Product deleted successfully');
       toast({
         title: "Success",
         description: "Product deleted successfully. Adjusting serial numbers...",
@@ -329,8 +320,6 @@ const ProductList: React.FC = () => {
   };
 
   const handleSaveProduct = async (productId: number | null = null) => {
-    console.log('handleSaveProduct called for product ID:', productId);
-
     const isCreating = productId === null;
 
     // Check permissions based on action
@@ -359,7 +348,6 @@ const ProductList: React.FC = () => {
         // Show confirmation dialog for creating new product
         const confirmed = confirm('Create a new product entry? This will add a new product with default values that you can edit.');
         if (!confirmed) {
-          console.log('Product creation cancelled by user');
           setSavingProductId(null);
           return;
         }
@@ -401,15 +389,12 @@ const ProductList: React.FC = () => {
           created_by: userProfile?.user_id || null
         };
 
-        console.log('Creating new product with data:', newProductData);
         const { error } = await window.ezsite.apis.tableCreate('11726', newProductData);
 
         if (error) {
-          console.error('API returned error:', error);
+          console.error('Error creating product:', error);
           throw error;
         }
-
-        console.log('New product created successfully with serial:', newSerial);
         toast({
           title: "Success",
           description: `New product created with serial #${newSerial}. Please edit it to add complete information.`,
@@ -429,12 +414,9 @@ const ProductList: React.FC = () => {
         // Show confirmation dialog for updating existing product
         const confirmed = confirm(`Save updates to "${product.product_name}"? This will update the product information with current values. Serial numbers will be automatically adjusted if needed.`);
         if (!confirmed) {
-          console.log('Product update cancelled by user');
           setSavingProductId(null);
           return;
         }
-
-        console.log('Updating product:', product);
 
         // Prepare the data for saving (update existing product)
         const updateData = {
@@ -462,15 +444,12 @@ const ProductList: React.FC = () => {
           created_by: product.created_by || userProfile?.user_id || null
         };
 
-        console.log('Updating product with data:', updateData);
         const { error } = await window.ezsite.apis.tableUpdate('11726', updateData);
 
         if (error) {
-          console.error('API returned error:', error);
+          console.error('Error updating product:', error);
           throw error;
         }
-
-        console.log('Product updated successfully with ID:', product.ID);
         toast({
           title: "Success",
           description: `"${product.product_name}" updated successfully`,
@@ -545,17 +524,15 @@ const ProductList: React.FC = () => {
   }, [loadMoreProducts, hasMoreProducts, isLoadingMore]);
 
   const handleViewLogs = (productId: number, productName: string) => {
-    console.log('handleViewLogs called for:', { productId, productName });
     setSelectedProduct({ id: productId, name: productName });
     setLogsModalOpen(true);
-    console.log('Logs modal should now be open');
   };
 
   const handleEdit = (productId: number) => {
     console.log('handleEdit called for product ID:', productId);
 
     // Check if user is admin
-    if (userProfile?.role !== 'Administrator' && userProfile?.role !== 'Admin') {
+    if (userProfile?.role !== 'admin') {
       toast({
         title: "Access Denied",
         description: "Only administrators can edit products.",
@@ -569,10 +546,8 @@ const ProductList: React.FC = () => {
   };
 
   const handleViewChangelog = (productId: number, productName: string) => {
-    console.log('handleViewChangelog called for:', { productId, productName });
     setSelectedProduct({ id: productId, name: productName });
     setChangelogModalOpen(true);
-    console.log('Changelog modal should now be open');
   };
 
   // Calculate display text for showing results
@@ -866,14 +841,11 @@ const ProductList: React.FC = () => {
                         <TableCell>
                           <div className="flex items-center space-x-1">
                             {/* Only show Edit button if user is admin */}
-                            {userProfile?.role === 'Administrator' || userProfile?.role === 'Admin' ?
+                            {userProfile?.role === 'admin' ?
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              console.log('Editing product:', product.ID);
-                              handleEdit(product.ID);
-                            }}
+                            onClick={() => handleEdit(product.ID)}
                             title="Edit product"
                             className="text-blue-600 hover:text-blue-700">
                                 <Edit className="w-4 h-4" />
@@ -883,10 +855,7 @@ const ProductList: React.FC = () => {
                             <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              console.log('Viewing changelog for product:', product.ID, product.product_name);
-                              handleViewChangelog(product.ID, product.product_name);
-                            }}
+                            onClick={() => handleViewChangelog(product.ID, product.product_name)}
                             title="View changelog"
                             className="text-green-600 hover:text-green-700">
                               <History className="w-4 h-4" />
@@ -894,23 +863,17 @@ const ProductList: React.FC = () => {
                             <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              console.log('Viewing logs for product:', product.ID, product.product_name);
-                              handleViewLogs(product.ID, product.product_name);
-                            }}
+                            onClick={() => handleViewLogs(product.ID, product.product_name)}
                             title="View change logs">
                               <FileText className="w-4 h-4" />
                             </Button>
                             
                             {/* Only show Delete button if user is admin */}
-                            {userProfile?.role === 'Administrator' || userProfile?.role === 'Admin' ?
+                            {userProfile?.role === 'admin' ?
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              console.log('Deleting product:', product.ID);
-                              handleDelete(product.ID);
-                            }}
+                            onClick={() => handleDelete(product.ID)}
                             className="text-red-600 hover:text-red-700"
                             title="Delete product">
                                 <Trash2 className="w-4 h-4" />

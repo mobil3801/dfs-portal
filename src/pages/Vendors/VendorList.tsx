@@ -135,8 +135,7 @@ const VendorList: React.FC = () => {
       // Navigate to edit form
       navigate(`/vendors/${vendorId}/edit`);
 
-      // Log for debugging
-      console.log('Navigating to edit vendor:', vendorId, vendor);
+      
     } catch (error) {
       console.error('Error navigating to edit form:', error);
       toast({
