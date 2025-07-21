@@ -13,7 +13,7 @@ import { useErrorHandler } from '@/hooks/use-error-handler';
 import { ArrowLeft, Save, Calculator, Upload, Eye, Plus, Download, FileText, AlertTriangle, DollarSign } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { useAuth } from '@/contexts/AuthContext';
-import { FormErrorBoundary } from '@/components/ErrorBoundary';
+import ErrorBoundaryWithNotifications from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -828,39 +828,7 @@ const ProductForm = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FormErrorBoundary
-            formName="Product Form"
-            showDataRecovery={true}
-            onFormReset={() => {
-              if (isEdit) {
-                fetchProduct();
-              } else {
-                setFormData({
-                  product_name: '',
-                  weight: 0,
-                  weight_unit: 'lb',
-                  department: 'Convenience Store',
-                  merchant_id: '',
-                  last_updated_date: new Date().toISOString().split('T')[0],
-                  last_shopping_date: '',
-                  case_price: 0,
-                  unit_per_case: 1,
-                  unit_price: 0,
-                  retail_price: 0,
-                  profit_margin: 0,
-                  category: '',
-                  supplier: '',
-                  quantity_in_stock: 0,
-                  minimum_stock: 0,
-                  description: '',
-                  bar_code_case: '',
-                  bar_code_unit: '',
-                  serial_number: 0,
-                  overdue: false
-                });
-                generateSerialNumber();
-              }
-            }}>
+          <ErrorBoundaryWithNotifications componentName="Product Form">
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
@@ -1256,7 +1224,7 @@ const ProductForm = () => {
                 </Button>
               </div>
             </form>
-          </FormErrorBoundary>
+          </ErrorBoundaryWithNotifications>
         </CardContent>
       </Card>
     </div>);

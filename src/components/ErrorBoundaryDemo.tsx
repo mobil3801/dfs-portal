@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Bug, Zap } from 'lucide-react';
-import { ComponentErrorBoundary, FormErrorBoundary } from './ErrorBoundary';
+import { ComponentErrorBoundary, FormErrorBoundary } from './ErrorBoundary/';
 
 // Component that throws an error on demand
 const ErrorProneComponent: React.FC<{shouldError: boolean;}> = ({ shouldError }) => {

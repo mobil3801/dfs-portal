@@ -1,25 +1,53 @@
 import { supabase } from '@/lib/supabase'
+import { translateError, getErrorMessage } from '@/utils/errorMessageTranslations'
 
-// Table ID to table name mapping - Updated for UUID-based business management schema
+// Debug flag to enable verbose logging
+const DEBUG_MODE = true;
+
+// PostgreSQL error codes and their meanings
+const PG_ERROR_CODES = {
+  '42P01': 'Relation (table) does not exist',
+  '42703': 'Column does not exist',
+  '42P02': 'Parameter does not exist',
+  '23505': 'Unique violation (duplicate key)',
+  '23503': 'Foreign key violation',
+  '22P02': 'Invalid text representation',
+  '22003': 'Numeric value out of range',
+  '08P01': 'Protocol violation',
+  '08001': 'Connection exception',
+  '08006': 'Connection failure',
+  '25P02': 'Transaction state error',
+  '40P01': 'Deadlock detected',
+  '53100': 'Disk full',
+  '53200': 'Out of memory',
+  '53300': 'Too many connections',
+  '57P01': 'Admin shutdown',
+  '57P02': 'Crash shutdown',
+  '57P03': 'Cannot connect now',
+  '57P04': 'Database dropped',
+  '57P05': 'Idle session timeout',
+};
+
+// Table ID to table name mapping - Updated for UUID-based business management schema with explicit schema qualification
 const TABLE_ID_MAPPING: Record<string | number, string> = {
-  11725: 'user_profiles',     // User profiles with UUID foreign keys
-  11726: 'products',          // Products management
-  11727: 'employees',         // Employee management
-  11731: 'licenses',          // License tracking
-  12196: 'deliveries',        // Delivery management
-  12356: 'sales_reports',     // Sales reporting
-  12599: 'stations',          // Station management
-  12611: 'alert_settings',    // Alert configuration
-  12612: 'sms_contacts',      // SMS contact management
-  12613: 'alert_history',     // Alert history
-  12706: 'audit_logs',        // Audit logging
-  24061: 'sms_settings',      // SMS provider settings
-  24062: 'sms_history',       // SMS delivery history
-  24201: 'sms_config',        // SMS configuration
-  24202: 'sms_history',       // Alternative SMS history mapping
-  25712: 'module_access',     // Module permissions
-  26928: 'file_uploads',      // File upload tracking
-  'User': 'auth.users'        // Supabase auth users (UUID-based)
+  11725: 'public.user_profiles',     // User profiles with UUID foreign keys
+  11726: 'public.products',          // Products management
+  11727: 'public.employees',         // Employee management
+  11731: 'public.licenses',          // License tracking
+  12196: 'public.deliveries',        // Delivery management
+  12356: 'public.sales_reports',     // Sales reporting
+  12599: 'public.stations',          // Station management
+  12611: 'public.alert_settings',    // Alert configuration
+  12612: 'public.sms_contacts',      // SMS contact management
+  12613: 'public.alert_history',     // Alert history
+  12706: 'public.audit_logs',        // Audit logging
+  24061: 'public.sms_settings',      // SMS provider settings
+  24062: 'public.sms_history',       // SMS delivery history
+  24201: 'public.sms_config',        // SMS configuration
+  24202: 'public.sms_history',       // Alternative SMS history mapping
+  25712: 'public.module_access',     // Module permissions
+  26928: 'public.file_uploads',      // File upload tracking
+  'User': 'auth.users'               // Supabase auth users (UUID-based)
 }
 
 // Interface matching the existing window.ezsite.apis
@@ -87,6 +115,77 @@ function convertFiltersToSupabaseQuery(query: any, filters: any[] = []) {
   return query
 }
 
+/**
+ * Logs detailed database error information
+ * @param error The database error object
+ * @param context Additional context about the operation
+ */
+function logDatabaseError(error: any, context: Record<string, any> = {}) {
+  const errorCode = error?.code;
+  const errorMessage = error?.message || 'Unknown error';
+  const errorDetail = error?.details || '';
+  const errorHint = error?.hint || '';
+  
+  console.error('========== DATABASE ERROR ==========');
+  console.error(`Error code: ${errorCode} - ${PG_ERROR_CODES[errorCode] || 'Unknown error code'}`);
+  console.error(`Message: ${errorMessage}`);
+  
+  if (errorDetail) console.error(`Detail: ${errorDetail}`);
+  if (errorHint) console.error(`Hint: ${errorHint}`);
+  
+  // Log additional context
+  console.error('Context:', JSON.stringify(context, null, 2));
+  console.error('Stack trace:', error?.stack || new Error().stack);
+  console.error('====================================');
+}
+
+/**
+ * Logs SQL query information for debugging
+ * @param tableName The table being queried
+ * @param operation The operation being performed (select, insert, update, delete)
+ * @param params Query parameters or filters
+ */
+function logSqlQuery(tableName: string, operation: string, params: any = {}) {
+  if (!DEBUG_MODE) return;
+  
+  console.log('========== SQL QUERY ==========');
+  console.log(`Operation: ${operation.toUpperCase()} on table "${tableName}"`);
+  console.log('Parameters:', JSON.stringify(params, null, 2));
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('===============================');
+}
+
+/**
+ * Checks if a table exists in any schema in the database
+ * @param tableName The table name to check
+ * @returns Promise resolving to an object with found flag and schema name if found
+ */
+async function checkTableInAllSchemas(tableName: string): Promise<{found: boolean, schema?: string}> {
+  try {
+    const { data, error } = await supabase
+      .from('information_schema.tables')
+      .select('table_schema')
+      .eq('table_name', tableName);
+    
+    if (error) {
+      logDatabaseError(error, { operation: 'schema_check', tableName });
+      return { found: false };
+    }
+    
+    if (data && data.length > 0) {
+      const schema = data[0].table_schema;
+      console.log(`Table "${tableName}" found in schema "${schema}"`);
+      return { found: true, schema };
+    }
+    
+    console.log(`Table "${tableName}" not found in any schema`);
+    return { found: false };
+  } catch (error) {
+    logDatabaseError(error, { operation: 'schema_check', tableName });
+    return { found: false };
+  }
+}
+
 // Supabase Adapter Implementation
 // cspell:ignore Ezsite
 class SupabaseAdapter implements EzsiteApiAdapter {
@@ -103,8 +202,15 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   }
 
   async tablePage(tableId: string | number, params: any): Promise<{data: any, error: string | null}> {
+    const context = {
+      operation: 'tablePage',
+      tableId,
+      params
+    };
+    
     try {
-      const tableName = this.getTableName(tableId)
+      const tableName = this.getTableName(tableId);
+      context.tableName = tableName;
       
       // Handle special case for auth.users table
       if (tableName === 'auth.users') {
@@ -113,46 +219,46 @@ class SupabaseAdapter implements EzsiteApiAdapter {
         return {
           data: { List: [], VirtualCount: 0 },
           error: null
-        }
+        };
       }
 
-      let query = supabase.from(tableName).select('*', { count: 'exact' })
+      // Log the query being executed
+      logSqlQuery(tableName, 'select', params);
+
+      let query = supabase.from(tableName).select('*', { count: 'exact' });
 
       // Apply filters
       if (params.Filters) {
-        query = convertFiltersToSupabaseQuery(query, params.Filters)
+        query = convertFiltersToSupabaseQuery(query, params.Filters);
       }
 
       // Apply ordering
       if (params.OrderByField) {
-        query = query.order(params.OrderByField, { 
-          ascending: params.IsAsc !== false 
-        })
+        query = query.order(params.OrderByField, {
+          ascending: params.IsAsc !== false
+        });
       }
 
       // Apply pagination
       if (params.PageNo && params.PageSize) {
-        const from = (params.PageNo - 1) * params.PageSize
-        const to = from + params.PageSize - 1
-        query = query.range(from, to)
+        const from = (params.PageNo - 1) * params.PageSize;
+        const to = from + params.PageSize - 1;
+        query = query.range(from, to);
       }
 
-      const { data, error, count } = await query
+      const { data, error, count } = await query;
 
       if (error) {
-        console.error('Supabase query error details')
-        console.error('Table name:', tableName)
-        console.error('Error message:', error.message)
-        console.error('Error code:', error.code)
-        console.error('Query params:', params)
-        if (error.message.includes('does not exist')) {
-          console.error('Missing column/table detected')
-        }
-        console.error('Supabase query error:', error)
+        // Enhanced error logging
+        logDatabaseError(error, context);
+        
+        // Use user-friendly error messages
+        const userFriendlyMessage = getErrorMessage(error, `loading data from ${tableName}`);
+        
         return {
           data: null,
-          error: error.message
-        }
+          error: userFriendlyMessage
+        };
       }
 
       // Format response to match Easysite format
@@ -162,126 +268,201 @@ class SupabaseAdapter implements EzsiteApiAdapter {
           VirtualCount: count || 0
         },
         error: null
-      }
+      };
 
     } catch (error: any) {
-      console.error('SupabaseAdapter.tablePage error:', error)
+      // Enhanced error logging for unexpected errors
+      console.error('========== UNEXPECTED ERROR ==========');
+      console.error('SupabaseAdapter.tablePage error:', error);
+      console.error('Context:', JSON.stringify(context, null, 2));
+      console.error('Stack trace:', error?.stack || new Error().stack);
+      console.error('======================================');
+      
+      // Use user-friendly error messages for unexpected errors
+      const userFriendlyMessage = getErrorMessage(error, `loading data from ${context.tableName || 'table'}`);
+      
       return {
         data: null,
-        error: error.message || 'Unknown error occurred'
-      }
+        error: userFriendlyMessage
+      };
     }
   }
 
   async tableCreate(tableId: string | number, data: any): Promise<{error: string | null}> {
+    const context = {
+      operation: 'tableCreate',
+      tableId,
+      data: { ...data, sensitive_fields_removed: true } // Don't log sensitive data
+    };
+    
     try {
-      const tableName = this.getTableName(tableId)
+      const tableName = this.getTableName(tableId);
+      context.tableName = tableName;
       
       // Handle special case for auth.users table
       if (tableName === 'auth.users') {
         return {
           error: 'Cannot create users directly in auth.users table'
-        }
+        };
       }
 
       // Add created_at timestamp if not present
       if (!data.created_at) {
-        data.created_at = new Date().toISOString()
+        data.created_at = new Date().toISOString();
       }
+
+      // Log the insert operation
+      logSqlQuery(tableName, 'insert', { recordCount: 1 });
 
       const { error } = await supabase
         .from(tableName)
-        .insert(data)
+        .insert(data);
 
       if (error) {
-        console.error('Supabase insert error:', error)
-        return { error: error.message }
+        // Enhanced error logging
+        logDatabaseError(error, context);
+        
+        // Use user-friendly error messages
+        const userFriendlyMessage = getErrorMessage(error, `creating record in ${tableName}`);
+        return { error: userFriendlyMessage };
       }
 
-      return { error: null }
+      return { error: null };
 
     } catch (error: any) {
-      console.error('SupabaseAdapter.tableCreate error:', error)
-      return { error: error.message || 'Unknown error occurred' }
+      // Enhanced error logging for unexpected errors
+      console.error('========== UNEXPECTED ERROR ==========');
+      console.error('SupabaseAdapter.tableCreate error:', error);
+      console.error('Context:', JSON.stringify(context, null, 2));
+      console.error('Stack trace:', error?.stack || new Error().stack);
+      console.error('======================================');
+      
+      // Use user-friendly error messages for unexpected errors
+      const userFriendlyMessage = getErrorMessage(error, `creating record in ${context.tableName || 'table'}`);
+      return { error: userFriendlyMessage };
     }
   }
 
   async tableUpdate(tableId: string | number, data: any): Promise<{error: string | null}> {
+    const context = {
+      operation: 'tableUpdate',
+      tableId,
+      data: { id: data.ID || data.id, sensitive_fields_removed: true } // Only log the ID
+    };
+    
     try {
-      const tableName = this.getTableName(tableId)
+      const tableName = this.getTableName(tableId);
+      context.tableName = tableName;
       
       // Handle special case for auth.users table
       if (tableName === 'auth.users') {
         return {
           error: 'Cannot update users directly in auth.users table'
-        }
+        };
       }
 
       // Handle both ID and id for compatibility
-      const recordId = data.ID || data.id
+      const recordId = data.ID || data.id;
       if (!recordId) {
-        return { error: 'Record ID is required for update operations' }
+        return { error: 'Record ID is required for update operations' };
       }
 
       // Add updated_at timestamp
-      data.updated_at = new Date().toISOString()
+      data.updated_at = new Date().toISOString();
 
       // Remove ID from data to avoid column conflicts, keep id
       if (data.ID) {
-        data.id = data.ID
-        delete data.ID
+        data.id = data.ID;
+        delete data.ID;
       }
+
+      // Log the update operation
+      logSqlQuery(tableName, 'update', { id: recordId });
 
       const { error } = await supabase
         .from(tableName)
         .update(data)
-        .eq('id', recordId)
+        .eq('id', recordId);
 
       if (error) {
-        console.error('Supabase update error:', error)
-        return { error: error.message }
+        // Enhanced error logging
+        logDatabaseError(error, context);
+        
+        // Use user-friendly error messages
+        const userFriendlyMessage = getErrorMessage(error, `updating record in ${tableName}`);
+        return { error: userFriendlyMessage };
       }
 
-      return { error: null }
+      return { error: null };
 
     } catch (error: any) {
-      console.error('SupabaseAdapter.tableUpdate error:', error)
-      return { error: error.message || 'Unknown error occurred' }
+      // Enhanced error logging for unexpected errors
+      console.error('========== UNEXPECTED ERROR ==========');
+      console.error('SupabaseAdapter.tableUpdate error:', error);
+      console.error('Context:', JSON.stringify(context, null, 2));
+      console.error('Stack trace:', error?.stack || new Error().stack);
+      console.error('======================================');
+      
+      // Use user-friendly error messages for unexpected errors
+      const userFriendlyMessage = getErrorMessage(error, `updating record in ${context.tableName || 'table'}`);
+      return { error: userFriendlyMessage };
     }
   }
 
   async tableDelete(tableId: string | number, data: any): Promise<{error: string | null}> {
+    const context = {
+      operation: 'tableDelete',
+      tableId,
+      recordId: data.ID || data.id
+    };
+    
     try {
-      const tableName = this.getTableName(tableId)
+      const tableName = this.getTableName(tableId);
+      context.tableName = tableName;
       
       // Handle special case for auth.users table
       if (tableName === 'auth.users') {
         return {
           error: 'Cannot delete users directly from auth.users table'
-        }
+        };
       }
 
       // Handle both ID and id for compatibility
-      const recordId = data.ID || data.id
+      const recordId = data.ID || data.id;
       if (!recordId) {
-        return { error: 'Record ID is required for delete operations' }
+        return { error: 'Record ID is required for delete operations' };
       }
+
+      // Log the delete operation
+      logSqlQuery(tableName, 'delete', { id: recordId });
 
       const { error } = await supabase
         .from(tableName)
         .delete()
-        .eq('id', recordId)
+        .eq('id', recordId);
 
       if (error) {
-        console.error('Supabase delete error:', error)
-        return { error: error.message }
+        // Enhanced error logging
+        logDatabaseError(error, context);
+        
+        // Use user-friendly error messages
+        const userFriendlyMessage = getErrorMessage(error, `deleting record from ${tableName}`);
+        return { error: userFriendlyMessage };
       }
 
-      return { error: null }
+      return { error: null };
 
     } catch (error: any) {
-      console.error('SupabaseAdapter.tableDelete error:', error)
-      return { error: error.message || 'Unknown error occurred' }
+      // Enhanced error logging for unexpected errors
+      console.error('========== UNEXPECTED ERROR ==========');
+      console.error('SupabaseAdapter.tableDelete error:', error);
+      console.error('Context:', JSON.stringify(context, null, 2));
+      console.error('Stack trace:', error?.stack || new Error().stack);
+      console.error('======================================');
+      
+      // Use user-friendly error messages for unexpected errors
+      const userFriendlyMessage = getErrorMessage(error, `deleting record from ${context.tableName || 'table'}`);
+      return { error: userFriendlyMessage };
     }
   }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import TopNavigation from '@/components/TopNavigation';
-import { ComponentErrorBoundary } from '@/components/ErrorBoundary';
+import ErrorBoundaryWithNotifications from '@/components/ErrorBoundary';
 
 const DashboardLayout = () => {
   return (
@@ -12,9 +12,9 @@ const DashboardLayout = () => {
       {/* Main Content Area - Full Width Below Navigation */}
       <main className="flex-1">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <ComponentErrorBoundary>
+          <ErrorBoundaryWithNotifications componentName="Dashboard Layout">
             <Outlet />
-          </ComponentErrorBoundary>
+          </ErrorBoundaryWithNotifications>
         </div>
       </main>
     </div>);

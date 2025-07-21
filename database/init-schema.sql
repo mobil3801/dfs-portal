@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS employees (
 );
 
 -- Products table (Table ID: 11726)
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS public.products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id VARCHAR(50) UNIQUE,
     name VARCHAR(255) NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- Sales reports table (Table ID: 12356)
-CREATE TABLE IF NOT EXISTS sales_reports (
+CREATE TABLE IF NOT EXISTS public.sales_reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     report_id VARCHAR(50) UNIQUE,
     station_id UUID REFERENCES stations(id),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS sales_reports (
 );
 
 -- Deliveries table (Table ID: 12196)
-CREATE TABLE IF NOT EXISTS deliveries (
+CREATE TABLE IF NOT EXISTS public.deliveries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     delivery_id VARCHAR(50) UNIQUE,
     station_id UUID REFERENCES stations(id),
@@ -307,7 +307,7 @@ CREATE TABLE IF NOT EXISTS sms_history (
 );
 
 -- Module access table (Table ID: 25712)
-CREATE TABLE IF NOT EXISTS module_access (
+CREATE TABLE IF NOT EXISTS public.module_access (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id),
     module_name VARCHAR(100) NOT NULL,

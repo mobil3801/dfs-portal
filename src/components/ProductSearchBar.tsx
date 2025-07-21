@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Package, X, RefreshCw } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useErrorNotification } from '@/contexts/ErrorNotificationContext';
 
 interface Product {
   ID: number;
@@ -42,6 +42,7 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const { showError, showInfo, showSuccess } = useErrorNotification();
 
   // Load all products on component mount
   useEffect(() => {
@@ -50,21 +51,29 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
     }
   }, [showAllProducts]);
 
+  // Helper function for safe string comparison
+  const safeStringIncludes = (source: string | null | undefined, search: string): boolean => {
+    if (!source) return false;
+    return source.toLowerCase().includes(search.toLowerCase());
+  };
+
   // Filter products based on search term
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setFilteredProducts(showAllProducts ? allProducts : []);
       setShowResults(showAllProducts && allProducts.length > 0);
     } else {
-      const filtered = allProducts.filter((product) =>
-      product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.bar_code_case.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.bar_code_unit.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchTermLower = searchTerm.toLowerCase();
+      const filtered = allProducts.filter((product) => {
+        // Use optional chaining and nullish coalescing to safely handle potentially undefined values
+        return safeStringIncludes(product.product_name, searchTermLower) ||
+          safeStringIncludes(product.product_code, searchTermLower) ||
+          safeStringIncludes(product.category, searchTermLower) ||
+          safeStringIncludes(product.supplier, searchTermLower) ||
+          safeStringIncludes(product.description, searchTermLower) ||
+          safeStringIncludes(product.bar_code_case, searchTermLower) ||
+          safeStringIncludes(product.bar_code_unit, searchTermLower);
+      });
       setFilteredProducts(filtered);
       setShowResults(filtered.length > 0);
     }
@@ -103,20 +112,20 @@ const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
       setFilteredProducts(products);
 
       if (products.length === 0) {
-        toast({
-          title: "No Products Found",
-          description: "No products are available in the database.",
-          variant: "default"
-        });
+        showInfo(
+          "No Products Available",
+          "No products are currently available in the database. Please check with your administrator or try refreshing the data."
+        );
+      } else {
+        showSuccess(
+          "Products Loaded",
+          `Successfully loaded ${products.length} products.`
+        );
       }
 
     } catch (error) {
       console.error('Error loading products:', error);
-      toast({
-        title: "Error Loading Products",
-        description: "Failed to load products from database",
-        variant: "destructive"
-      });
+      showError(error, "Failed to load products from database. Please try again or contact support if the problem persists.");
     } finally {
       setIsLoading(false);
     }

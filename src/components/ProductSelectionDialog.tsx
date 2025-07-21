@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NumberInput } from '@/components/ui/number-input';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, X } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useErrorNotification } from '@/contexts/ErrorNotificationContext';
 
 interface Product {
   ID: number;
@@ -38,6 +38,7 @@ const ProductSelectionDialog: React.FC<ProductSelectionDialogProps> = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [unitType, setUnitType] = useState('pieces');
+  const { showError } = useErrorNotification();
 
   // Unit type options
   const unitTypes = [
@@ -60,20 +61,18 @@ const ProductSelectionDialog: React.FC<ProductSelectionDialogProps> = ({
     if (!product) return;
 
     if (quantity <= 0) {
-      toast({
-        title: "Invalid Quantity",
-        description: "Please enter a valid quantity greater than 0",
-        variant: "destructive"
-      });
+      showError(
+        new Error("Invalid quantity entered"),
+        "Please enter a valid quantity greater than 0."
+      );
       return;
     }
 
     if (quantity > product.quantity_in_stock) {
-      toast({
-        title: "Insufficient Stock",
-        description: `Only ${product.quantity_in_stock} units available in stock`,
-        variant: "destructive"
-      });
+      showError(
+        new Error("Insufficient stock"),
+        `Only ${product.quantity_in_stock} units available in stock. Please reduce the quantity or select a different product.`
+      );
       return;
     }
 
