@@ -47,7 +47,8 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "VITE_SUPABASE_URL": "https://avmteiaswrkmyjifndab.supabase.co"
-  }
+        "NODE_ENV": "production",
+        "VITE_SUPABASE_URL": "https://avmteiaswrkmyjifndab.supabase.co",
+        "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bXRlaWFzd3JrbXlqaWZuZGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk3ODg4NDksImV4cCI6MjAzNTM2NDg0OX0.5993kG_0a7i_3iSYi5b_i2_3jC8UeQ4jY8y_kX8zZ2o"
+      }
 }
