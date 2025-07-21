@@ -86,4 +86,561 @@ const PLACEHOLDERS = {
     '{date}',
     '{message_details}',
     '{contact_info}'
-  ]\n};\n\nconst SMSTemplateManager: React.FC<SMSTemplateManagerProps> = ({ onTemplateSelected }) => {\n  const [templates, setTemplates] = useState<SMSTemplate[]>([]);\n  const [isLoading, setIsLoading] = useState(false);\n  const [editingTemplate, setEditingTemplate] = useState<SMSTemplate | null>(null);\n  const [isDialogOpen, setIsDialogOpen] = useState(false);\n  const [previewTemplate, setPreviewTemplate] = useState<SMSTemplate | null>(null);\n  const [searchTerm, setSearchTerm] = useState('');\n  const { toast } = useToast();\n\n  const [newTemplate, setNewTemplate] = useState<SMSTemplate>({\n    template_name: '',\n    template_type: 'License Expiry',\n    message_content: '',\n    is_active: true,\n    priority_level: 'Medium',\n    character_count: 0\n  });\n\n  useEffect(() => {\n    loadTemplates();\n  }, []);\n\n  useEffect(() => {\n    // Update character count when message content changes\n    if (editingTemplate) {\n      setEditingTemplate(prev => prev ? {\n        ...prev,\n        character_count: prev.message_content.length\n      } : null);\n    } else {\n      setNewTemplate(prev => ({\n        ...prev,\n        character_count: prev.message_content.length\n      }));\n    }\n  }, [editingTemplate?.message_content, newTemplate.message_content]);\n\n  const loadTemplates = async () => {\n    setIsLoading(true);\n    try {\n      const { data, error } = await window.ezsite.apis.tablePage(12641, {\n        PageNo: 1,\n        PageSize: 100,\n        OrderByField: 'ID',\n        IsAsc: false,\n        Filters: []\n      });\n\n      if (error) throw new Error(error);\n      \n      if (data?.List) {\n        setTemplates(data.List);\n      }\n    } catch (error) {\n      console.error('Error loading templates:', error);\n      toast({\n        title: 'Error',\n        description: 'Failed to load SMS templates',\n        variant: 'destructive'\n      });\n    } finally {\n      setIsLoading(false);\n    }\n  };\n\n  const saveTemplate = async () => {\n    const template = editingTemplate || newTemplate;\n    \n    if (!template.template_name || !template.message_content) {\n      toast({\n        title: 'Error',\n        description: 'Please fill in all required fields',\n        variant: 'destructive'\n      });\n      return;\n    }\n\n    setIsLoading(true);\n    try {\n      const templateData = {\n        template_name: template.template_name,\n        template_type: template.template_type,\n        message_content: template.message_content,\n        is_active: template.is_active,\n        priority_level: template.priority_level,\n        character_count: template.message_content.length,\n        created_by: 1 // This should be the current user ID\n      };\n\n      if (editingTemplate?.ID) {\n        const { error } = await window.ezsite.apis.tableUpdate(12641, {\n          ID: editingTemplate.ID,\n          ...templateData\n        });\n        if (error) throw new Error(error);\n        \n        toast({\n          title: 'Success',\n          description: 'Template updated successfully'\n        });\n      } else {\n        const { error } = await window.ezsite.apis.tableCreate(12641, templateData);\n        if (error) throw new Error(error);\n        \n        toast({\n          title: 'Success',\n          description: 'Template created successfully'\n        });\n      }\n\n      setIsDialogOpen(false);\n      setEditingTemplate(null);\n      setNewTemplate({\n        template_name: '',\n        template_type: 'License Expiry',\n        message_content: '',\n        is_active: true,\n        priority_level: 'Medium',\n        character_count: 0\n      });\n      \n      await loadTemplates();\n    } catch (error) {\n      console.error('Error saving template:', error);\n      toast({\n        title: 'Error',\n        description: error instanceof Error ? error.message : 'Failed to save template',\n        variant: 'destructive'\n      });\n    } finally {\n      setIsLoading(false);\n    }\n  };\n\n  const deleteTemplate = async (templateId: number) => {\n    try {\n      const { error } = await window.ezsite.apis.tableDelete(12641, { ID: templateId });\n      if (error) throw new Error(error);\n      \n      toast({\n        title: 'Success',\n        description: 'Template deleted successfully'\n      });\n      \n      await loadTemplates();\n    } catch (error) {\n      console.error('Error deleting template:', error);\n      toast({\n        title: 'Error',\n        description: 'Failed to delete template',\n        variant: 'destructive'\n      });\n    }\n  };\n\n  const duplicateTemplate = (template: SMSTemplate) => {\n    setNewTemplate({\n      template_name: `${template.template_name} (Copy)`,\n      template_type: template.template_type,\n      message_content: template.message_content,\n      is_active: template.is_active,\n      priority_level: template.priority_level,\n      character_count: template.character_count\n    });\n    setEditingTemplate(null);\n    setIsDialogOpen(true);\n  };\n\n  const insertPlaceholder = (placeholder: string) => {\n    const template = editingTemplate || newTemplate;\n    const newContent = template.message_content + placeholder;\n    \n    if (editingTemplate) {\n      setEditingTemplate({\n        ...editingTemplate,\n        message_content: newContent\n      });\n    } else {\n      setNewTemplate({\n        ...newTemplate,\n        message_content: newContent\n      });\n    }\n  };\n\n  const previewTemplateWithSampleData = (template: SMSTemplate): string => {\n    let preview = template.message_content;\n    const sampleData: Record<string, string> = {\n      '{license_name}': 'Business License',\n      '{station}': 'MOBIL',\n      '{expiry_date}': '2024-12-31',\n      '{days_remaining}': '15',\n      '{license_number}': 'BL-2024-001',\n      '{renewal_url}': 'https://example.com/renew',\n      '{product_name}': 'Regular Gas',\n      '{current_stock}': '150',\n      '{minimum_stock}': '500',\n      '{reorder_date}': '2024-03-15',\n      '{vendor_name}': 'ABC Suppliers',\n      '{amount}': '$1,250.00',\n      '{due_date}': '2024-03-20',\n      '{invoice_number}': 'INV-2024-001',\n      '{days_overdue}': '5',\n      '{delivery_date}': '2024-03-10',\n      '{product_type}': 'Fuel Delivery',\n      '{quantity}': '5000 gallons',\n      '{bol_number}': 'BOL-2024-001',\n      '{alert_type}': 'Equipment Failure',\n      '{timestamp}': '2024-03-10 14:30',\n      '{contact_info}': '+1-555-0123',\n      '{action_required}': 'Immediate attention required',\n      '{recipient_name}': 'John Doe',\n      '{date}': '2024-03-10',\n      '{message_details}': 'Monthly report available'\n    };\n\n    Object.entries(sampleData).forEach(([placeholder, value]) => {\n      preview = preview.replace(new RegExp(placeholder.replace(/[{}]/g, '\\\\$&'), 'g'), value);\n    });\n\n    return preview;\n  };\n\n  const filteredTemplates = templates.filter(template =>\n    template.template_name.toLowerCase().includes(searchTerm.toLowerCase()) ||\n    template.template_type.toLowerCase().includes(searchTerm.toLowerCase()) ||\n    template.message_content.toLowerCase().includes(searchTerm.toLowerCase())\n  );\n\n  const getPriorityColor = (priority: string) => {\n    switch (priority) {\n      case 'Critical': return 'bg-red-100 text-red-800';\n      case 'High': return 'bg-orange-100 text-orange-800';\n      case 'Medium': return 'bg-blue-100 text-blue-800';\n      case 'Low': return 'bg-gray-100 text-gray-800';\n      default: return 'bg-gray-100 text-gray-800';\n    }\n  };\n\n  return (\n    <div className=\"space-y-6\">\n      <Card>\n        <CardHeader>\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <CardTitle className=\"flex items-center gap-2\">\n                <MessageSquare className=\"h-5 w-5\" />\n                SMS Message Templates\n              </CardTitle>\n              <CardDescription>\n                Create and manage customizable SMS templates for different alert types\n              </CardDescription>\n            </div>\n            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>\n              <DialogTrigger asChild>\n                <Button onClick={() => {\n                  setEditingTemplate(null);\n                  setNewTemplate({\n                    template_name: '',\n                    template_type: 'License Expiry',\n                    message_content: '',\n                    is_active: true,\n                    priority_level: 'Medium',\n                    character_count: 0\n                  });\n                }}>\n                  <Plus className=\"h-4 w-4 mr-2\" />\n                  Create Template\n                </Button>\n              </DialogTrigger>\n              <DialogContent className=\"max-w-2xl max-h-[90vh] overflow-y-auto\">\n                <DialogHeader>\n                  <DialogTitle>\n                    {editingTemplate ? 'Edit Template' : 'Create New Template'}\n                  </DialogTitle>\n                  <DialogDescription>\n                    Design a customizable SMS template with placeholders for dynamic content.\n                  </DialogDescription>\n                </DialogHeader>\n                \n                <div className=\"space-y-4\">\n                  <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n                    <div className=\"space-y-2\">\n                      <Label htmlFor=\"template_name\">Template Name *</Label>\n                      <Input\n                        id=\"template_name\"\n                        placeholder=\"Enter template name\"\n                        value={editingTemplate?.template_name || newTemplate.template_name}\n                        onChange={(e) => {\n                          const value = e.target.value;\n                          if (editingTemplate) {\n                            setEditingTemplate({ ...editingTemplate, template_name: value });\n                          } else {\n                            setNewTemplate({ ...newTemplate, template_name: value });\n                          }\n                        }}\n                      />\n                    </div>\n                    <div className=\"space-y-2\">\n                      <Label htmlFor=\"template_type\">Template Type</Label>\n                      <Select\n                        value={editingTemplate?.template_type || newTemplate.template_type}\n                        onValueChange={(value) => {\n                          if (editingTemplate) {\n                            setEditingTemplate({ ...editingTemplate, template_type: value });\n                          } else {\n                            setNewTemplate({ ...newTemplate, template_type: value });\n                          }\n                        }}\n                      >\n                        <SelectTrigger>\n                          <SelectValue />\n                        </SelectTrigger>\n                        <SelectContent>\n                          {TEMPLATE_TYPES.map(type => (\n                            <SelectItem key={type} value={type}>{type}</SelectItem>\n                          ))}\n                        </SelectContent>\n                      </Select>\n                    </div>\n                  </div>\n\n                  <div className=\"space-y-2\">\n                    <Label htmlFor=\"priority_level\">Priority Level</Label>\n                    <Select\n                      value={editingTemplate?.priority_level || newTemplate.priority_level}\n                      onValueChange={(value) => {\n                        if (editingTemplate) {\n                          setEditingTemplate({ ...editingTemplate, priority_level: value });\n                        } else {\n                          setNewTemplate({ ...newTemplate, priority_level: value });\n                        }\n                      }}\n                    >\n                      <SelectTrigger className=\"w-48\">\n                        <SelectValue />\n                      </SelectTrigger>\n                      <SelectContent>\n                        {PRIORITY_LEVELS.map(level => (\n                          <SelectItem key={level} value={level}>{level}</SelectItem>\n                        ))}\n                      </SelectContent>\n                    </Select>\n                  </div>\n\n                  <div className=\"space-y-2\">\n                    <div className=\"flex items-center justify-between\">\n                      <Label htmlFor=\"message_content\">Message Content *</Label>\n                      <span className=\"text-sm text-gray-600\">\n                        {editingTemplate?.character_count || newTemplate.character_count} characters\n                      </span>\n                    </div>\n                    <Textarea\n                      id=\"message_content\"\n                      placeholder=\"Enter your SMS message with placeholders...\"\n                      rows={4}\n                      value={editingTemplate?.message_content || newTemplate.message_content}\n                      onChange={(e) => {\n                        const value = e.target.value;\n                        if (editingTemplate) {\n                          setEditingTemplate({ ...editingTemplate, message_content: value });\n                        } else {\n                          setNewTemplate({ ...newTemplate, message_content: value });\n                        }\n                      }}\n                    />\n                    {(editingTemplate?.character_count || newTemplate.character_count) > 160 && (\n                      <div className=\"flex items-center gap-1 text-sm text-orange-600\">\n                        <AlertCircle className=\"h-3 w-3\" />\n                        Message exceeds 160 characters and may be split into multiple SMS\n                      </div>\n                    )}\n                  </div>\n\n                  <div className=\"space-y-2\">\n                    <Label>Available Placeholders</Label>\n                    <div className=\"flex flex-wrap gap-2\">\n                      {PLACEHOLDERS[editingTemplate?.template_type || newTemplate.template_type]?.map(placeholder => (\n                        <Button\n                          key={placeholder}\n                          variant=\"outline\"\n                          size=\"sm\"\n                          onClick={() => insertPlaceholder(placeholder)}\n                        >\n                          {placeholder}\n                        </Button>\n                      ))}\n                    </div>\n                  </div>\n\n                  <div className=\"flex items-center space-x-2\">\n                    <Switch\n                      id=\"is_active\"\n                      checked={editingTemplate?.is_active || newTemplate.is_active}\n                      onCheckedChange={(checked) => {\n                        if (editingTemplate) {\n                          setEditingTemplate({ ...editingTemplate, is_active: checked });\n                        } else {\n                          setNewTemplate({ ...newTemplate, is_active: checked });\n                        }\n                      }}\n                    />\n                    <Label htmlFor=\"is_active\">Active Template</Label>\n                  </div>\n\n                  <div className=\"flex justify-end gap-2\">\n                    <Button variant=\"outline\" onClick={() => setIsDialogOpen(false)}>\n                      Cancel\n                    </Button>\n                    <Button onClick={saveTemplate} disabled={isLoading}>\n                      {isLoading && <Loader2 className=\"h-4 w-4 mr-2 animate-spin\" />}\n                      {editingTemplate ? 'Update' : 'Create'} Template\n                    </Button>\n                  </div>\n                </div>\n              </DialogContent>\n            </Dialog>\n          </div>\n        </CardHeader>\n        <CardContent>\n          <div className=\"space-y-4\">\n            <div className=\"flex items-center gap-4\">\n              <Input\n                placeholder=\"Search templates...\"\n                value={searchTerm}\n                onChange={(e) => setSearchTerm(e.target.value)}\n                className=\"max-w-sm\"\n              />\n              <Badge variant=\"outline\">\n                {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}\n              </Badge>\n            </div>\n\n            <div className=\"border rounded-lg\">\n              <Table>\n                <TableHeader>\n                  <TableRow>\n                    <TableHead>Name</TableHead>\n                    <TableHead>Type</TableHead>\n                    <TableHead>Priority</TableHead>\n                    <TableHead>Characters</TableHead>\n                    <TableHead>Status</TableHead>\n                    <TableHead>Actions</TableHead>\n                  </TableRow>\n                </TableHeader>\n                <TableBody>\n                  {filteredTemplates.map((template) => (\n                    <TableRow key={template.ID}>\n                      <TableCell className=\"font-medium\">\n                        {template.template_name}\n                      </TableCell>\n                      <TableCell>\n                        <Badge variant=\"outline\">\n                          {template.template_type}\n                        </Badge>\n                      </TableCell>\n                      <TableCell>\n                        <Badge className={getPriorityColor(template.priority_level)}>\n                          {template.priority_level}\n                        </Badge>\n                      </TableCell>\n                      <TableCell>{template.character_count}</TableCell>\n                      <TableCell>\n                        <Badge variant={template.is_active ? \"secondary\" : \"outline\"}>\n                          {template.is_active ? 'Active' : 'Inactive'}\n                        </Badge>\n                      </TableCell>\n                      <TableCell>\n                        <div className=\"flex items-center gap-2\">\n                          <Button\n                            variant=\"ghost\"\n                            size=\"sm\"\n                            onClick={() => setPreviewTemplate(template)}\n                          >\n                            <Eye className=\"h-3 w-3\" />\n                          </Button>\n                          <Button\n                            variant=\"ghost\"\n                            size=\"sm\"\n                            onClick={() => {\n                              setEditingTemplate(template);\n                              setIsDialogOpen(true);\n                            }}\n                          >\n                            <Edit className=\"h-3 w-3\" />\n                          </Button>\n                          <Button\n                            variant=\"ghost\"\n                            size=\"sm\"\n                            onClick={() => duplicateTemplate(template)}\n                          >\n                            <Copy className=\"h-3 w-3\" />\n                          </Button>\n                          <Button\n                            variant=\"ghost\"\n                            size=\"sm\"\n                            onClick={() => template.ID && deleteTemplate(template.ID)}\n                          >\n                            <Trash2 className=\"h-3 w-3\" />\n                          </Button>\n                        </div>\n                      </TableCell>\n                    </TableRow>\n                  ))}\n                  {filteredTemplates.length === 0 && (\n                    <TableRow>\n                      <TableCell colSpan={6} className=\"text-center py-8\">\n                        <div className=\"text-gray-500\">\n                          {searchTerm ? 'No templates match your search' : 'No templates created yet'}\n                        </div>\n                      </TableCell>\n                    </TableRow>\n                  )}\n                </TableBody>\n              </Table>\n            </div>\n          </div>\n        </CardContent>\n      </Card>\n\n      {/* Preview Dialog */}\n      <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>\n        <DialogContent>\n          <DialogHeader>\n            <DialogTitle>Template Preview</DialogTitle>\n            <DialogDescription>\n              Preview of \"{previewTemplate?.template_name}\" with sample data\n            </DialogDescription>\n          </DialogHeader>\n          \n          {previewTemplate && (\n            <div className=\"space-y-4\">\n              <div className=\"bg-gray-50 p-4 rounded-lg\">\n                <div className=\"text-sm text-gray-600 mb-2\">Original Template:</div>\n                <div className=\"font-mono text-sm\">{previewTemplate.message_content}</div>\n              </div>\n              \n              <div className=\"bg-blue-50 p-4 rounded-lg\">\n                <div className=\"text-sm text-blue-600 mb-2\">Preview with Sample Data:</div>\n                <div className=\"text-sm\">{previewTemplateWithSampleData(previewTemplate)}</div>\n              </div>\n              \n              <div className=\"flex items-center justify-between text-sm text-gray-600\">\n                <span>Character Count: {previewTemplate.character_count}</span>\n                <span>SMS Parts: {Math.ceil(previewTemplate.character_count / 160)}</span>\n              </div>\n            </div>\n          )}\n        </DialogContent>\n      </Dialog>\n    </div>\n  );\n};\n\nexport default SMSTemplateManager;
+  ]
+};
+
+const SMSTemplateManager: React.FC<SMSTemplateManagerProps> = ({ onTemplateSelected }) => {
+  const [templates, setTemplates] = useState<SMSTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SMSTemplate | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<SMSTemplate | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+
+  const [newTemplate, setNewTemplate] = useState<SMSTemplate>({
+    template_name: '',
+    template_type: 'License Expiry',
+    message_content: '',
+    is_active: true,
+    priority_level: 'Medium',
+    character_count: 0
+  });
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  useEffect(() => {
+    // Update character count when message content changes
+    if (editingTemplate) {
+      setEditingTemplate(prev => prev ? {
+        ...prev,
+        character_count: prev.message_content.length
+      } : null);
+    } else {
+      setNewTemplate(prev => ({
+        ...prev,
+        character_count: prev.message_content.length
+      }));
+    }
+  }, [editingTemplate?.message_content, newTemplate.message_content]);
+
+  const loadTemplates = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await window.ezsite.apis.tablePage(12641, {
+        PageNo: 1,
+        PageSize: 100,
+        OrderByField: 'ID',
+        IsAsc: false,
+        Filters: []
+      });
+
+      if (error) throw new Error(error);
+      
+      if (data?.List) {
+        setTemplates(data.List);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load SMS templates',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveTemplate = async () => {
+    const template = editingTemplate || newTemplate;
+    
+    if (!template.template_name || !template.message_content) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const templateData = {
+        template_name: template.template_name,
+        template_type: template.template_type,
+        message_content: template.message_content,
+        is_active: template.is_active,
+        priority_level: template.priority_level,
+        character_count: template.message_content.length,
+        created_by: 1 // This should be the current user ID
+      };
+
+      if (editingTemplate?.ID) {
+        const { error } = await window.ezsite.apis.tableUpdate(12641, {
+          ID: editingTemplate.ID,
+          ...templateData
+        });
+        if (error) throw new Error(error);
+        
+        toast({
+          title: 'Success',
+          description: 'Template updated successfully'
+        });
+      } else {
+        const { error } = await window.ezsite.apis.tableCreate(12641, templateData);
+        if (error) throw new Error(error);
+        
+        toast({
+          title: 'Success',
+          description: 'Template created successfully'
+        });
+      }
+
+      setIsDialogOpen(false);
+      setEditingTemplate(null);
+      setNewTemplate({
+        template_name: '',
+        template_type: 'License Expiry',
+        message_content: '',
+        is_active: true,
+        priority_level: 'Medium',
+        character_count: 0
+      });
+      
+      await loadTemplates();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save template',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteTemplate = async (templateId: number) => {
+    try {
+      const { error } = await window.ezsite.apis.tableDelete(12641, { ID: templateId });
+      if (error) throw new Error(error);
+      
+      toast({
+        title: 'Success',
+        description: 'Template deleted successfully'
+      });
+      
+      await loadTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete template',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const duplicateTemplate = (template: SMSTemplate) => {
+    setNewTemplate({
+      template_name: `${template.template_name} (Copy)`,
+      template_type: template.template_type,
+      message_content: template.message_content,
+      is_active: template.is_active,
+      priority_level: template.priority_level,
+      character_count: template.character_count
+    });
+    setEditingTemplate(null);
+    setIsDialogOpen(true);
+  };
+
+  const insertPlaceholder = (placeholder: string) => {
+    const template = editingTemplate || newTemplate;
+    const newContent = template.message_content + placeholder;
+    
+    if (editingTemplate) {
+      setEditingTemplate({
+        ...editingTemplate,
+        message_content: newContent
+      });
+    } else {
+      setNewTemplate({
+        ...newTemplate,
+        message_content: newContent
+      });
+    }
+  };
+
+  const previewTemplateWithSampleData = (template: SMSTemplate): string => {
+    let preview = template.message_content;
+    const sampleData: Record<string, string> = {
+      '{license_name}': 'Business License',
+      '{station}': 'MOBIL',
+      '{expiry_date}': '2024-12-31',
+      '{days_remaining}': '15',
+      '{license_number}': 'BL-2024-001',
+      '{renewal_url}': 'https://example.com/renew',
+      '{product_name}': 'Regular Gas',
+      '{current_stock}': '150',
+      '{minimum_stock}': '500',
+      '{reorder_date}': '2024-03-15',
+      '{vendor_name}': 'ABC Suppliers',
+      '{amount}': '$1,250.00',
+      '{due_date}': '2024-03-20',
+      '{invoice_number}': 'INV-2024-001',
+      '{days_overdue}': '5',
+      '{delivery_date}': '2024-03-10',
+      '{product_type}': 'Fuel Delivery',
+      '{quantity}': '5000 gallons',
+      '{bol_number}': 'BOL-2024-001',
+      '{alert_type}': 'Equipment Failure',
+      '{timestamp}': '2024-03-10 14:30',
+      '{contact_info}': '+1-555-0123',
+      '{action_required}': 'Immediate attention required',
+      '{recipient_name}': 'John Doe',
+      '{date}': '2024-03-10',
+      '{message_details}': 'Monthly report available'
+    };
+
+    Object.entries(sampleData).forEach(([placeholder, value]) => {
+      preview = preview.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
+    });
+
+    return preview;
+  };
+
+  const filteredTemplates = templates.filter(template =>
+    template.template_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    template.template_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    template.message_content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'Critical': return 'bg-red-100 text-red-800';
+      case 'High': return 'bg-orange-100 text-orange-800';
+      case 'Medium': return 'bg-blue-100 text-blue-800';
+      case 'Low': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                SMS Message Templates
+              </CardTitle>
+              <CardDescription>
+                Create and manage customizable SMS templates for different alert types
+              </CardDescription>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setEditingTemplate(null);
+                  setNewTemplate({
+                    template_name: '',
+                    template_type: 'License Expiry',
+                    message_content: '',
+                    is_active: true,
+                    priority_level: 'Medium',
+                    character_count: 0
+                  });
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingTemplate ? 'Edit Template' : 'Create New Template'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Design a customizable SMS template with placeholders for dynamic content.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="template_name">Template Name *</Label>
+                      <Input
+                        id="template_name"
+                        placeholder="Enter template name"
+                        value={editingTemplate?.template_name || newTemplate.template_name}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (editingTemplate) {
+                            setEditingTemplate({ ...editingTemplate, template_name: value });
+                          } else {
+                            setNewTemplate({ ...newTemplate, template_name: value });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="template_type">Template Type</Label>
+                      <Select
+                        value={editingTemplate?.template_type || newTemplate.template_type}
+                        onValueChange={(value) => {
+                          if (editingTemplate) {
+                            setEditingTemplate({ ...editingTemplate, template_type: value });
+                          } else {
+                            setNewTemplate({ ...newTemplate, template_type: value });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TEMPLATE_TYPES.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="priority_level">Priority Level</Label>
+                    <Select
+                      value={editingTemplate?.priority_level || newTemplate.priority_level}
+                      onValueChange={(value) => {
+                        if (editingTemplate) {
+                          setEditingTemplate({ ...editingTemplate, priority_level: value });
+                        } else {
+                          setNewTemplate({ ...newTemplate, priority_level: value });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRIORITY_LEVELS.map(level => (
+                          <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="message_content">Message Content *</Label>
+                      <span className="text-sm text-gray-600">
+                        {editingTemplate?.character_count || newTemplate.character_count} characters
+                      </span>
+                    </div>
+                    <Textarea
+                      id="message_content"
+                      placeholder="Enter your SMS message with placeholders..."
+                      rows={4}
+                      value={editingTemplate?.message_content || newTemplate.message_content}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (editingTemplate) {
+                          setEditingTemplate({ ...editingTemplate, message_content: value });
+                        } else {
+                          setNewTemplate({ ...newTemplate, message_content: value });
+                        }
+                      }}
+                    />
+                    {(editingTemplate?.character_count || newTemplate.character_count) > 160 && (
+                      <div className="flex items-center gap-1 text-sm text-orange-600">
+                        <AlertCircle className="h-3 w-3" />
+                        Message exceeds 160 characters and may be split into multiple SMS
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Available Placeholders</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {PLACEHOLDERS[editingTemplate?.template_type || newTemplate.template_type]?.map(placeholder => (
+                        <Button
+                          key={placeholder}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => insertPlaceholder(placeholder)}
+                        >
+                          {placeholder}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_active"
+                      checked={editingTemplate?.is_active || newTemplate.is_active}
+                      onCheckedChange={(checked) => {
+                        if (editingTemplate) {
+                          setEditingTemplate({ ...editingTemplate, is_active: checked });
+                        } else {
+                          setNewTemplate({ ...newTemplate, is_active: checked });
+                        }
+                      }}
+                    />
+                    <Label htmlFor="is_active">Active Template</Label>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={saveTemplate} disabled={isLoading}>
+                      {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {editingTemplate ? 'Update' : 'Create'} Template
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Input
+                placeholder="Search templates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+              <Badge variant="outline">
+                {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Characters</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTemplates.map((template) => (
+                    <TableRow key={template.ID}>
+                      <TableCell className="font-medium">
+                        {template.template_name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {template.template_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getPriorityColor(template.priority_level)}>
+                          {template.priority_level}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{template.character_count}</TableCell>
+                      <TableCell>
+                        <Badge variant={template.is_active ? "secondary" : "outline"}>
+                          {template.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewTemplate(template)}
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingTemplate(template);
+                              setIsDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => duplicateTemplate(template)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => template.ID && deleteTemplate(template.ID)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredTemplates.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="text-gray-500">
+                          {searchTerm ? 'No templates match your search' : 'No templates created yet'}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Template Preview</DialogTitle>
+            <DialogDescription>
+              Preview of "{previewTemplate?.template_name}" with sample data
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewTemplate && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-600 mb-2">Original Template:</div>
+                <div className="font-mono text-sm">{previewTemplate.message_content}</div>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-sm text-blue-600 mb-2">Preview with Sample Data:</div>
+                <div className="text-sm">{previewTemplateWithSampleData(previewTemplate)}</div>
+              </div>
+              
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Character Count: {previewTemplate.character_count}</span>
+                <span>SMS Parts: {Math.ceil(previewTemplate.character_count / 160)}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default SMSTemplateManager;

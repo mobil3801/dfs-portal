@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { MemoryLeakMonitor } from '@/services/memoryLeakMonitor';
 
 export interface MemoryLeakConfig {
@@ -20,13 +20,13 @@ const DEFAULT_CONFIG: MemoryLeakConfig = {
 };
 
 export function useMemoryLeakDetector(
-componentName: string,
-config: MemoryLeakConfig = DEFAULT_CONFIG)
-{
+  componentName: string,
+  config: MemoryLeakConfig = DEFAULT_CONFIG
+) {
   const monitor = useRef<MemoryLeakMonitor | null>(null);
   const timers = useRef<Set<NodeJS.Timeout>>(new Set());
   const intervals = useRef<Set<NodeJS.Timeout>>(new Set());
-  const eventListeners = useRef<Map<EventTarget, {event: string;listener: EventListener;}[]>>(new Map());
+  const eventListeners = useRef<Map<EventTarget, {event: string; listener: EventListener;}[]>>(new Map());
   const subscriptions = useRef<Set<() => void>>(new Set());
   const asyncOperations = useRef<Set<AbortController>>(new Set());
   const isMounted = useRef(true);
@@ -122,11 +122,11 @@ config: MemoryLeakConfig = DEFAULT_CONFIG)
 
   // Wrapped addEventListener with automatic cleanup
   const safeAddEventListener = useCallback((
-  target: EventTarget,
-  event: string,
-  listener: EventListener,
-  options?: boolean | AddEventListenerOptions) =>
-  {
+    target: EventTarget,
+    event: string,
+    listener: EventListener,
+    options?: boolean | AddEventListenerOptions
+  ) => {
     if (!config.trackEventListeners) {
       target.addEventListener(event, listener, options);
       return;
@@ -152,8 +152,8 @@ config: MemoryLeakConfig = DEFAULT_CONFIG)
 
   // Track async operations with AbortController
   const trackAsyncOperation = useCallback(<T,>(
-  operation: (signal: AbortSignal) => Promise<T>)
-  : Promise<T> => {
+    operation: (signal: AbortSignal) => Promise<T>
+  ): Promise<T> => {
     if (!config.trackAsyncOperations) {
       return operation(new AbortController().signal);
     }
@@ -194,521 +194,44 @@ config: MemoryLeakConfig = DEFAULT_CONFIG)
         });
       }
     } catch (error) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       // Ignore circular reference errors for closure size checking
-    }}, [componentName, config.warnOnLargeClosure, config.maxClosureSize]);return { safeSetTimeout, safeSetInterval, safeAddEventListener, trackSubscription, trackAsyncOperation, safeSetState, monitorClosureSize, cleanup: { timers: cleanupTimers, eventListeners: cleanupEventListeners, subscriptions: cleanupSubscriptions, asyncOperations: cleanupAsyncOperations, all: () => {cleanupTimers();cleanupEventListeners();cleanupSubscriptions();cleanupAsyncOperations();} }, isComponentMounted: () => isMounted.current };} // HOC for automatic memory leak detection
-export function withMemoryLeakDetection<P extends object>(WrappedComponent: React.ComponentType<P>, componentName?: string) {return function MemoryLeakDetectedComponent(props: P) {const displayName = componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';const memoryTools = useMemoryLeakDetector(displayName);return <WrappedComponent {...props} memoryTools={memoryTools} />;};}export default useMemoryLeakDetector;
+    }
+  }, [componentName, config.warnOnLargeClosure, config.maxClosureSize]);
+
+  return {
+    safeSetTimeout,
+    safeSetInterval,
+    safeAddEventListener,
+    trackSubscription,
+    trackAsyncOperation,
+    safeSetState,
+    monitorClosureSize,
+    cleanup: {
+      timers: cleanupTimers,
+      eventListeners: cleanupEventListeners,
+      subscriptions: cleanupSubscriptions,
+      asyncOperations: cleanupAsyncOperations,
+      all: () => {
+        cleanupTimers();
+        cleanupEventListeners();
+        cleanupSubscriptions();
+        cleanupAsyncOperations();
+      }
+    },
+    isComponentMounted: () => isMounted.current
+  };
+}
+
+// HOC for automatic memory leak detection
+export function withMemoryLeakDetection<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  componentName?: string
+) {
+  return function MemoryLeakDetectedComponent(props: P) {
+    const displayName = componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component';
+    const memoryTools = useMemoryLeakDetector(displayName);
+    return <WrappedComponent {...props} memoryTools={memoryTools} />;
+  };
+}
+
+export default useMemoryLeakDetector;

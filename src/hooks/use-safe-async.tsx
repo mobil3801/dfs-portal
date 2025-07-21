@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import useMemoryLeakDetector from './use-memory-leak-detector';
 
 export interface SafeAsyncOptions {
