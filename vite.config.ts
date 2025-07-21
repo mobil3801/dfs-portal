@@ -6,8 +6,7 @@ import path from 'path';
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
-    historyApiFallback: true // This enables client-side routing
+    port: 8080
   },
   plugins: [
   react()],
