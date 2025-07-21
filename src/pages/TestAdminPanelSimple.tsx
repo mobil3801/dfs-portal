@@ -122,7 +122,7 @@ const TestAdminPanelSimple = () => {
         </div>
         
         {/* Mock auth context for the component */}
-        <div style={{ '--test-user': 'Test Admin' } as any}>
+        <div>
           <RealTimeAdminDashboard />
         </div>
       </div>
