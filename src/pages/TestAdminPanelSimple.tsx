@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import RealTimeAdminDashboard from '@/components/RealTimeAdminDashboard';
 
 // Mock window.ezsite.apis for testing
