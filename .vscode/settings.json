@@ -132,5 +132,7 @@
     "livePreview.openPreviewTarget": "External Browser",
     "livePreview.showServerStatusNotifications": true,
     "livePreview.tasks.runTaskWithExternalPreview": true,
-    "workbench.experimental.cloudChanges.partialMatches.enabled": true
+    "workbench.experimental.cloudChanges.partialMatches.enabled": true,
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "redhat.telemetry.enabled": true
 }
