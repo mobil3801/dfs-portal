@@ -185,7 +185,7 @@ const SalesReportList: React.FC = () => {
     setPrintDialogOpen(true);
   };
 
-  const canAddReport = userProfile?.role === 'Employee' || isAdmin();
+  const canAddReport = userProfile?.role === 'employee' || isAdmin();
 
   const getStationBadgeColor = (station: string) => {
     switch (station.toUpperCase()) {

@@ -192,10 +192,10 @@ const EmployeeForm: React.FC = () => {
         // If somehow the ID exists, try the next number
         const fallbackId = `DFS${nextNumber + 1}`;
         setFormData((prev) => ({ ...prev, employee_id: fallbackId }));
-        console.log('Generated unique employee ID (fallback):', fallbackId);
+        
       } else {
         setFormData((prev) => ({ ...prev, employee_id: uniqueId }));
-        console.log('Generated unique employee ID:', uniqueId);
+        
       }
     } catch (error) {
       console.error('Error generating employee ID:', error);
@@ -314,7 +314,7 @@ const EmployeeForm: React.FC = () => {
         // Don't fail the upload if the record creation fails
       }
 
-      console.log('File uploaded successfully:', fileId);
+      
       return fileId;
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -336,12 +336,12 @@ const EmployeeForm: React.FC = () => {
       return;
     }
 
-    console.log('Deleting files from database:', fileIds);
+    
 
     try {
       // Delete files from file_uploads table
       for (const fileId of fileIds) {
-        console.log('Processing file for deletion:', fileId);
+        
 
         // First, get the file record to find the correct ID
         const { data: fileData, error: fetchError } = await window.ezsite.apis.tablePage('26928', {
@@ -357,7 +357,7 @@ const EmployeeForm: React.FC = () => {
 
         if (fileData && fileData.List && fileData.List.length > 0) {
           const fileRecord = fileData.List[0];
-          console.log('Found file record to delete:', fileRecord);
+          
 
           // Mark file as inactive instead of deleting (for audit trail)
           const { error: deactivateError } = await window.ezsite.apis.tableUpdate('26928', {
@@ -375,10 +375,10 @@ const EmployeeForm: React.FC = () => {
             if (deleteError) {
               console.error(`Error deleting file ${fileId}:`, deleteError);
             } else {
-              console.log(`Successfully deleted file ${fileId} from database`);
+              
             }
           } else {
-            console.log(`Successfully deactivated file ${fileId} in database`);
+            
           }
         } else {
           console.warn(`No file record found for file ID ${fileId}`);

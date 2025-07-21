@@ -165,7 +165,7 @@ function createEnhancedEzsiteApiReplacement() {
 
 // Initialize the global replacement
 export function initializeGlobalApiReplacement() {
-  console.log('🔄 Initializing global EZSite API replacement with Supabase...');
+  console.log('Initializing global EZSite API replacement with Supabase...');
   
   // Create the window.ezsite object if it doesn't exist
   if (!window.ezsite) {
@@ -177,7 +177,7 @@ export function initializeGlobalApiReplacement() {
     window.ezsite.apis = createEnhancedEzsiteApiReplacement();
   }
 
-  console.log('✅ Global EZSite API replacement initialized - all existing code now uses Supabase');
+  console.log('Global EZSite API replacement initialized - all existing code now uses Supabase');
 }
 
 // Auto-initialize when this module is imported

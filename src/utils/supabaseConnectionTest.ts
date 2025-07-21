@@ -35,7 +35,7 @@ export class SupabaseConnectionTest {
         return result;
       }
       result.details.clientConfigured = true;
-      console.log('✅ Supabase client is configured');
+      console.log('Supabase client is configured');
 
       // Test 2: Check if we can reach the database
       const { data, error } = await supabase
@@ -49,7 +49,7 @@ export class SupabaseConnectionTest {
         return result;
       }
       result.details.databaseReachable = true;
-      console.log('✅ Database is reachable');
+      console.log('Database is reachable');
 
       // Test 3: Check if our tables exist
       const { data: tables, error: tablesError } = await supabase
@@ -71,16 +71,16 @@ export class SupabaseConnectionTest {
       result.details.tablesExist = (tables?.length || 0) > 0;
       
       if (result.details.tablesExist) {
-        console.log(`✅ Found ${result.details.tableCount} of our tables`);
+        console.log(`Found ${result.details.tableCount} of our tables`);
         result.connected = true;
       } else {
         result.error = 'No application tables found - database schema not set up yet';
-        console.log('⚠️ No application tables found - run the database schema setup');
+        console.log('No application tables found - run the database schema setup');
       }
 
     } catch (error) {
       result.error = `Connection test failed: ${error instanceof Error ? error.message : String(error)}`;
-      console.error('❌ Supabase connection test failed:', error);
+      console.error('Supabase connection test failed:', error);
     }
 
     return result;
@@ -132,10 +132,10 @@ export class SupabaseConnectionTest {
     console.log('\n=== SUPABASE CONNECTION TEST ===');
     const result = await this.testConnection();
     
-    console.log(`Client Configured: ${result.details.clientConfigured ? '✅' : '❌'}`);
-    console.log(`Database Reachable: ${result.details.databaseReachable ? '✅' : '❌'}`);
-    console.log(`Tables Exist: ${result.details.tablesExist ? '✅' : '❌'} (${result.details.tableCount}/11)`);
-    console.log(`Overall Status: ${result.connected ? '✅ CONNECTED' : '❌ NOT READY'}`);
+    console.log(`Client Configured: ${result.details.clientConfigured ? 'YES' : 'NO'}`);
+    console.log(`Database Reachable: ${result.details.databaseReachable ? 'YES' : 'NO'}`);
+    console.log(`Tables Exist: ${result.details.tablesExist ? 'YES' : 'NO'} (${result.details.tableCount}/11)`);
+    console.log(`Overall Status: ${result.connected ? 'CONNECTED' : 'NOT READY'}`);
     
     if (result.error) {
       console.log(`Error: ${result.error}`);

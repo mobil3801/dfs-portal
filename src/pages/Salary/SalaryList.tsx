@@ -133,7 +133,7 @@ const SalaryList: React.FC = () => {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      console.log('🔄 Fetching employees data...');
+      
       const { data, error } = await window.ezsite.apis.tablePage(EMPLOYEES_TABLE_ID, {
         PageNo: 1,
         PageSize: 1000,
@@ -145,7 +145,7 @@ const SalaryList: React.FC = () => {
       if (error) throw error;
 
       const employeesList = data?.List || [];
-      console.log('✅ Employees fetched successfully:', employeesList.length);
+      
       setEmployees(employeesList);
     } catch (error) {
       console.error('❌ Error fetching employees:', error);

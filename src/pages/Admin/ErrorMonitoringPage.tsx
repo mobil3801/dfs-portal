@@ -34,7 +34,7 @@ const ErrorMonitoringPage: React.FC = () => {
   }
 
   const runDiagnostics = () => {
-    console.log('Running comprehensive error diagnostics...');
+    
 
     // Check for common issues
     const diagnostics = {

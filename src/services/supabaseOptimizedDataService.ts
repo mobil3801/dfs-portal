@@ -503,19 +503,19 @@ class SupabaseOptimizedDataService {
 
       // Trigger alerts if needed
       if (metrics.avgResponseTime > 3000) {
-        console.warn('🚨 High response time detected:', Math.round(metrics.avgResponseTime) + 'ms');
+        console.warn('High response time detected:', Math.round(metrics.avgResponseTime) + 'ms');
       }
 
       if (metrics.memoryUsage > 0.75) {
-        console.warn('⚠️ High memory usage detected:', Math.round(metrics.memoryUsage * 100) + '%');
+        console.warn('High memory usage detected:', Math.round(metrics.memoryUsage * 100) + '%');
       }
 
       if (!metrics.supabaseHealth) {
-        console.error('🚨 Supabase connection is not healthy');
+        console.error('Supabase connection is not healthy');
       }
 
       if (metrics.supabaseErrors > 10) {
-        console.warn('⚠️ High number of Supabase errors:', metrics.supabaseErrors);
+        console.warn('High number of Supabase errors:', metrics.supabaseErrors);
       }
 
     }, 60000); // Every minute

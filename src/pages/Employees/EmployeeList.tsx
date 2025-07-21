@@ -206,8 +206,7 @@ const EmployeeList: React.FC = () => {
       // Navigate to edit form
       navigate(`/employees/${employeeId}/edit`);
 
-      // Log for debugging
-      console.log('Navigating to edit employee:', employeeId, employee);
+      
     } catch (error) {
       console.error('Error navigating to edit form:', error);
       toast({

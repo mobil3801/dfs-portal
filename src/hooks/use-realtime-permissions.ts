@@ -35,8 +35,8 @@ export const useRealtimePermissions = (module: string) => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
-  // Check if current user is admin
-  const isAdmin = userProfile?.role === 'Administrator';
+  // Check if current user is admin - standardized to lowercase
+  const isAdmin = userProfile?.role === 'admin';
 
   // Load user permissions from database
   const loadPermissions = useCallback(async () => {

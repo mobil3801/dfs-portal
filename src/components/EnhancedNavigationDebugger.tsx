@@ -78,40 +78,24 @@ const EnhancedNavigationDebugger: React.FC = () => {
   const [showSensitiveData, setShowSensitiveData] = useState(false);
   const [showDiscrepancies, setShowDiscrepancies] = useState(true);
 
-  // Role checking function with enhanced logging
+  // Role checking function for diagnostic purposes
   const canAccessRoute = (requiredRole: string | null) => {
-    console.log(`🔍 DEBUGGER: Checking access for role: "${requiredRole}"`);
-    
     if (!requiredRole) {
-      console.log('✅ DEBUGGER: No role required, access granted');
       return true;
     }
     
     if (!isAuthenticated) {
-      console.log('❌ DEBUGGER: User not authenticated, access denied');
       return false;
     }
     
-    console.log('🔍 DEBUGGER: Authentication details:', {
-      isAuthenticated,
-      userRole: userProfile?.role || 'None',
-      isAdmin: isAdmin(),
-      isManager: isManager()
-    });
-    
     if (requiredRole.toLowerCase() === 'admin') {
-      const hasAccess = isAdmin();
-      console.log(`${hasAccess ? '✅' : '❌'} DEBUGGER: Admin role check: ${hasAccess}`);
-      return hasAccess;
+      return isAdmin();
     }
     
     if (requiredRole.toLowerCase() === 'manager') {
-      const hasAccess = isManager();
-      console.log(`${hasAccess ? '✅' : '❌'} DEBUGGER: Manager role check: ${hasAccess}`);
-      return hasAccess;
+      return isManager();
     }
     
-    console.log('✅ DEBUGGER: Default access granted for authenticated user');
     return true;
   };
 
@@ -119,9 +103,8 @@ const EnhancedNavigationDebugger: React.FC = () => {
     setRefreshing(true);
     try {
       await refreshUserData();
-      console.log('🔄 ENHANCED DEBUGGER: User data refreshed');
     } catch (error) {
-      console.error('❌ ENHANCED DEBUGGER: Failed to refresh user data:', error);
+      console.error('Failed to refresh user data:', error);
     } finally {
       setRefreshing(false);
     }
@@ -171,22 +154,13 @@ const EnhancedNavigationDebugger: React.FC = () => {
     overallHealth: isInitialized && !isLoading && isAuthenticated && !!user && accessibleItems.length > 0 && discrepancies.length === 0
   };
 
-  // Log diagnostic information
+  // Track diagnostic information for internal state
   useEffect(() => {
-    console.log('🔍 ENHANCED DEBUGGER: Navigation state', {
-      isAuthenticated,
-      userRole: userProfile?.role || 'None',
-      isAdmin: isAdmin(),
-      isManager: isManager(),
-      accessibleItems: accessibleItems.length,
-      inaccessibleItems: inaccessibleItems.length,
-      discrepancies: discrepancies.length
-    });
-    
-    if (discrepancies.length > 0) {
-      console.warn('⚠️ ENHANCED DEBUGGER: Found role discrepancies between navigation configurations', discrepancies);
+    // Only log critical discrepancies that affect navigation functionality
+    if (discrepancies.length > 0 && navigationHealth.overallHealth === false) {
+      console.warn('Navigation configuration discrepancies detected:', discrepancies.length);
     }
-  }, [isAuthenticated, userProfile, accessibleItems.length, inaccessibleItems.length, discrepancies.length]);
+  }, [discrepancies.length, navigationHealth.overallHealth]);
 
   return (
     <div className="space-y-6">

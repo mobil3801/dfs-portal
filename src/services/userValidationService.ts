@@ -185,7 +185,7 @@ class UserValidationService {
         }
 
         // Check for multiple admin roles (only one admin per system)
-        if (userData.role === 'Administrator') {
+        if (userData.role === 'admin') {
           const adminResponse = await window.ezsite.apis.tablePage(11725, {
             PageNo: 1,
             PageSize: 1,

@@ -42,8 +42,6 @@ class LicenseAlertService {
    */
   async checkAndSendAlerts(): Promise<void> {
     try {
-      console.log('🔍 Checking for licenses requiring alerts...');
-
       // Get all active alert settings using Supabase migration helper
       const migrationHelper = SupabaseMigrationHelper.getInstance();
       const { data: settingsData, error: settingsError } = await migrationHelper.callApi('tablePage', 12611, {
@@ -116,8 +114,6 @@ class LicenseAlertService {
         const expiryDate = new Date(license.expiry_date);
         const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-        console.log(`📋 Checking license: ${license.license_name} (expires in ${daysUntilExpiry} days)`);
-
         for (const setting of settings) {
           // Check if license needs alert based on this setting
           if (daysUntilExpiry <= setting.days_before_expiry && daysUntilExpiry > 0) {
@@ -129,8 +125,6 @@ class LicenseAlertService {
             );
 
             if (shouldSendAlert) {
-              console.log(`⚠️ License ${license.license_name} needs alert (${daysUntilExpiry} days remaining)`);
-
               // Get relevant contacts for this license
               const relevantContacts = this.getRelevantContacts(contacts, license.station);
 
@@ -144,7 +138,7 @@ class LicenseAlertService {
         }
       }
 
-      console.log(`✅ License alert check completed. ${alertsSent} alerts sent.`);
+      console.log(`License alert check completed. ${alertsSent} alerts sent.`);
     } catch (error) {
       console.error('Error in license alert service:', error);
     }
@@ -219,8 +213,6 @@ class LicenseAlertService {
         daysUntilExpiry
       );
 
-      console.log(`📱 Sending license alert to ${contact.contact_name} (${contact.mobile_number})`);
-
       // Send SMS
       const smsResult = await smsService.sendSMS({
         to: contact.mobile_number,
@@ -242,9 +234,9 @@ class LicenseAlertService {
       });
 
       if (smsResult.success) {
-        console.log(`✅ License alert sent successfully to ${contact.contact_name}`);
+        console.log(`License alert sent successfully to ${contact.contact_name}`);
       } else {
-        console.error(`❌ License alert failed to ${contact.contact_name}:`, smsResult.error);
+        console.error(`License alert failed to ${contact.contact_name}:`, smsResult.error);
       }
     } catch (error) {
       console.error(`Error sending license alert to ${contact.contact_name}:`, error);

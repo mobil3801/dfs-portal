@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
     // Prevent rapid successive submissions (debounce)
     const now = Date.now();
     if (now - lastSubmitTime < 1000) {
-      console.log('⏳ Ignoring rapid submission attempt');
+      
       return;
     }
     setLastSubmitTime(now);
@@ -127,17 +127,17 @@ const LoginPage: React.FC = () => {
 
     try {
       if (authMode === 'login') {
-        console.log('🔑 Initiating login attempt for:', email);
+        
         const success = await login(email, password);
         if (success) {
-          console.log('✅ Login successful, navigating to dashboard');
+          
           toast({
             title: "Welcome back!",
             description: "Successfully logged in"
           });
           navigate('/dashboard');
         } else {
-          console.log('❌ Login failed - check authError state');
+          
           // Error will be handled by useEffect watching authError
         }
       } else if (authMode === 'register') {

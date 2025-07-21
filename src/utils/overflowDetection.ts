@@ -264,7 +264,7 @@ export class OverflowDetector {
 
     // In a real application, you would send this to your analytics service
     if (this.config.enableLogging) {
-      console.log('📊 Overflow Report:', report);
+      console.log('Overflow Report:', report);
     }
 
     // Store in localStorage for debugging

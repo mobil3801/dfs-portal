@@ -37,10 +37,10 @@ export class DraftSavingService {
 
       localStorage.setItem(key, JSON.stringify(draftData));
 
-      console.log(`✅ Draft saved successfully for ${stationName} on ${reportDate}`);
+      console.log(`Draft saved successfully for ${stationName} on ${reportDate}`);
       return true;
     } catch (error) {
-      console.error('❌ Error saving draft:', error);
+      console.error('Error saving draft:', error);
       return false;
     }
   }
@@ -62,15 +62,15 @@ export class DraftSavingService {
 
       // Check if draft has expired
       if (now > draftData.expiresAt) {
-        console.log(`⏰ Draft expired for ${stationName} on ${reportDate}, removing...`);
+        console.log(`Draft expired for ${stationName} on ${reportDate}, removing...`);
         this.deleteDraft(stationName, reportDate);
         return null;
       }
 
-      console.log(`✅ Draft loaded for ${stationName} on ${reportDate}`);
+      console.log(`Draft loaded for ${stationName} on ${reportDate}`);
       return draftData.data;
     } catch (error) {
-      console.error('❌ Error loading draft:', error);
+      console.error('Error loading draft:', error);
       return null;
     }
   }
@@ -82,9 +82,9 @@ export class DraftSavingService {
     try {
       const key = this.getDraftKey(stationName, reportDate);
       localStorage.removeItem(key);
-      console.log(`🗑️ Draft deleted for ${stationName} on ${reportDate}`);
+      console.log(`Draft deleted for ${stationName} on ${reportDate}`);
     } catch (error) {
-      console.error('❌ Error deleting draft:', error);
+      console.error('Error deleting draft:', error);
     }
   }
 
@@ -105,7 +105,7 @@ export class DraftSavingService {
 
       return now <= draftData.expiresAt;
     } catch (error) {
-      console.error('❌ Error checking draft:', error);
+      console.error('Error checking draft:', error);
       return false;
     }
   }
@@ -142,7 +142,7 @@ export class DraftSavingService {
         timeRemainingHours
       };
     } catch (error) {
-      console.error('❌ Error getting draft info:', error);
+      console.error('Error getting draft info:', error);
       return null;
     }
   }
@@ -176,10 +176,10 @@ export class DraftSavingService {
       }
 
       if (cleanedCount > 0) {
-        console.log(`🧹 Cleaned up ${cleanedCount} expired drafts`);
+        console.log(`Cleaned up ${cleanedCount} expired drafts`);
       }
     } catch (error) {
-      console.error('❌ Error during draft cleanup:', error);
+      console.error('Error during draft cleanup:', error);
     }
 
     return cleanedCount;
@@ -235,7 +235,7 @@ export class DraftSavingService {
 
       return drafts.sort((a, b) => b.savedAt.getTime() - a.savedAt.getTime());
     } catch (error) {
-      console.error('❌ Error getting all drafts:', error);
+      console.error('Error getting all drafts:', error);
       return [];
     }
   }

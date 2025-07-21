@@ -40,7 +40,7 @@ export class AutomaticMigration {
       this.steps.push({ step: stepName, status, message, error });
     }
     
-    console.log(`${status === 'completed' ? '✅' : status === 'failed' ? '❌' : '🔄'} ${stepName}: ${message}`);
+    console.log(`[${status.toUpperCase()}] ${stepName}: ${message}`);
     
     if (this.onProgress) {
       this.onProgress([...this.steps]);
@@ -456,7 +456,7 @@ export class AutomaticMigration {
    * Run the complete migration process
    */
   async runCompleteMigration(): Promise<boolean> {
-    console.log('🚀 Starting Automatic Supabase Migration...');
+    console.log('Starting Automatic Supabase Migration...');
     
     // Step 1: Test connection
     const connectionSuccess = await this.testConnection();
@@ -483,7 +483,7 @@ export class AutomaticMigration {
     // Step 4: Insert sample data
     const sampleDataSuccess = await this.insertSampleData();
 
-    console.log('✅ Migration completed successfully!');
+    console.log('Migration completed successfully!');
     return true;
   }
 

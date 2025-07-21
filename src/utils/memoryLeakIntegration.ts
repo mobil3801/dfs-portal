@@ -18,12 +18,12 @@ typeof window !== 'undefined' && performanceAPI.getSupportInfo().performance;
  */
 export function initializeMemoryLeakDetection() {
   if (!MEMORY_LEAK_DETECTION_ENABLED || typeof window === 'undefined') {
-    console.log('🔍 Memory leak detection disabled (not supported or disabled in environment)');
+    console.log('Memory leak detection disabled (not supported or disabled in environment)');
     return;
   }
 
   try {
-    console.log('🔍 Memory leak detection initialized');
+    console.log('Memory leak detection initialized');
 
     // Track global timer usage
     const originalSetTimeout = window.setTimeout;
@@ -43,7 +43,7 @@ export function initializeMemoryLeakDetection() {
       activeTimers.add(id);
 
       if (activeTimers.size > 50) {
-        console.warn(`🚨 High number of active timers detected: ${activeTimers.size}`);
+        console.warn(`High number of active timers detected: ${activeTimers.size}`);
       }
 
       return id;
@@ -54,7 +54,7 @@ export function initializeMemoryLeakDetection() {
       activeIntervals.add(id);
 
       if (activeIntervals.size > 20) {
-        console.warn(`🚨 High number of active intervals detected: ${activeIntervals.size}`);
+        console.warn(`High number of active intervals detected: ${activeIntervals.size}`);
       }
 
       return id;
@@ -85,7 +85,7 @@ export function initializeMemoryLeakDetection() {
       activeRequests.add(requestId);
 
       if (activeRequests.size > 100) {
-        console.warn(`🚨 High number of active fetch requests: ${activeRequests.size}`);
+        console.warn(`High number of active fetch requests: ${activeRequests.size}`);
       }
 
       return originalFetch.call(window, input, init).finally(() => {
@@ -110,7 +110,7 @@ export function initializeMemoryLeakDetection() {
       }
 
       if (leaks.length > 0) {
-        console.warn('🚨 Potential memory leaks detected on page unload:', leaks.join(', '));
+        console.warn('Potential memory leaks detected on page unload:', leaks.join(', '));
       }
     });
 
@@ -125,12 +125,12 @@ export function initializeMemoryLeakDetection() {
           const totalMB = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
           const limitMB = (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2);
 
-          console.log(`📊 Memory: ${usedMB}MB used, ${totalMB}MB total, ${limitMB}MB limit`);
+          console.log(`Memory: ${usedMB}MB used, ${totalMB}MB total, ${limitMB}MB limit`);
 
           // Check for rapid memory growth
           const pressure = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
           if (pressure > 0.8) {
-            console.warn(`🚨 High memory pressure: ${(pressure * 100).toFixed(1)}%`);
+            console.warn(`High memory pressure: ${(pressure * 100).toFixed(1)}%`);
           }
         }
       } catch (error) {
@@ -139,9 +139,9 @@ export function initializeMemoryLeakDetection() {
       }
     }, 30000); // Check every 30 seconds
 
-    console.log('✅ Memory leak detection patches applied');
+    console.log('Memory leak detection patches applied');
   } catch (error) {
-    console.warn('⚠️ Memory leak detection initialization failed:', error);
+    console.warn('Memory leak detection initialization failed:', error);
     // Continue without memory leak detection
   }
 }
@@ -155,7 +155,7 @@ export function reportMemoryLeak(componentName: string, leakType: string, detail
   const monitor = MemoryLeakMonitor.getInstance();
   monitor.reportPotentialLeak(componentName, leakType, details);
 
-  console.warn(`🔴 Memory leak reported: ${componentName} - ${leakType}`, details);
+  console.warn(`Memory leak reported: ${componentName} - ${leakType}`, details);
 }
 
 /**
@@ -205,10 +205,10 @@ export function useComponentMemoryTracking(componentName: string) {
 export function forceGarbageCollection(): boolean {
   if (typeof window !== 'undefined' && (window as any).gc) {
     (window as any).gc();
-    console.log('🗑️ Garbage collection forced');
+    console.log('Garbage collection forced');
     return true;
   }
-  console.warn('⚠️ Garbage collection not available. Enable with --js-flags="--expose-gc"');
+  console.warn('Garbage collection not available. Enable with --js-flags="--expose-gc"');
   return false;
 }
 

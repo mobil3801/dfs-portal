@@ -268,16 +268,16 @@ class SupabaseConnectionManager {
 
     // Check for connection pressure
     if (stats.connectionPressure >= this.alertThresholds.critical) {
-      console.error('🚨 CRITICAL: Virtual connection usage is critically high!', stats);
+      console.error('CRITICAL: Virtual connection usage is critically high!', stats);
       this.triggerEmergencyCleanup();
     } else if (stats.connectionPressure >= this.alertThresholds.warning) {
-      console.warn('⚠️ WARNING: Virtual connection usage is high', stats);
+      console.warn('WARNING: Virtual connection usage is high', stats);
       this.optimizeConnections();
     }
 
     // Log health status
     if (!this.supabaseHealthy) {
-      console.error('🚨 Supabase connection is not healthy');
+      console.error('Supabase connection is not healthy');
     }
   }
 

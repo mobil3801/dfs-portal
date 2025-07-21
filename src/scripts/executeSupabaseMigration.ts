@@ -225,7 +225,7 @@ class SupabaseMigrationExecutor {
     // Step 1: Test connection
     const connectionTest = await this.testConnection();
     if (!connectionTest) {
-      console.log('\n❌ Migration failed: Cannot connect to Supabase\n');
+      console.log('\nMigration failed: Cannot connect to Supabase\n');
       return;
     }
 
@@ -251,7 +251,7 @@ class SupabaseMigrationExecutor {
       console.log('2. Verify connection shows 🟢 CONNECTED');
       console.log('3. Test application functionality');
     } else {
-      console.log('\n⚠️ Migration completed with issues. Manual intervention may be required.\n');
+      console.log('\nMigration completed with issues. Manual intervention may be required.\n');
     }
   }
 
@@ -259,18 +259,18 @@ class SupabaseMigrationExecutor {
    * Print migration summary
    */
   printSummary(): void {
-    console.log('\n📊 Migration Summary:');
+    console.log('\nMigration Summary:');
     console.log('========================');
     
     const successful = this.results.filter(r => r.success).length;
     const failed = this.results.filter(r => !r.success).length;
     
-    console.log(`✅ Successful: ${successful}`);
-    console.log(`❌ Failed: ${failed}`);
-    console.log(`📋 Total Steps: ${this.results.length}`);
+    console.log(`Successful: ${successful}`);
+    console.log(`Failed: ${failed}`);
+    console.log(`Total Steps: ${this.results.length}`);
     
     if (failed > 0) {
-      console.log('\n❌ Failed Steps:');
+      console.log('\nFailed Steps:');
       this.results
         .filter(r => !r.success)
         .forEach(r => console.log(`   - ${r.step}: ${r.error || r.message}`));

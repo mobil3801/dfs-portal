@@ -295,7 +295,7 @@ const SMSManagement: React.FC = () => {
         }]
       };
 
-      console.log('Sending SMS with data:', smsData);
+      
 
       const response = await fetch('https://rest.clicksend.com/v3/sms/send', {
         method: 'POST',
@@ -307,7 +307,7 @@ const SMSManagement: React.FC = () => {
       });
 
       const result = await response.json();
-      console.log('ClickSend API Response:', result);
+      
 
       if (response.ok && result.data?.messages?.[0]) {
         const messageResult = result.data.messages[0];
