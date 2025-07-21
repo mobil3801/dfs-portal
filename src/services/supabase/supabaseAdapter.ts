@@ -28,26 +28,27 @@ const PG_ERROR_CODES = {
   '57P05': 'Idle session timeout',
 };
 
-// Table ID to table name mapping - Updated for UUID-based business management schema with explicit schema qualification
+// Table ID to table name mapping - Fixed: Removed explicit "public." prefixes to prevent schema doubling
+// The Supabase client automatically handles schema resolution via db.schema config
 const TABLE_ID_MAPPING: Record<string | number, string> = {
-  11725: 'public.user_profiles',     // User profiles with UUID foreign keys
-  11726: 'public.products',          // Products management
-  11727: 'public.employees',         // Employee management
-  11731: 'public.licenses',          // License tracking
-  12196: 'public.deliveries',        // Delivery management
-  12356: 'public.sales_reports',     // Sales reporting
-  12599: 'public.stations',          // Station management
-  12611: 'public.alert_settings',    // Alert configuration
-  12612: 'public.sms_contacts',      // SMS contact management
-  12613: 'public.alert_history',     // Alert history
-  12706: 'public.audit_logs',        // Audit logging
-  24061: 'public.sms_settings',      // SMS provider settings
-  24062: 'public.sms_history',       // SMS delivery history
-  24201: 'public.sms_config',        // SMS configuration
-  24202: 'public.sms_history',       // Alternative SMS history mapping
-  25712: 'public.module_access',     // Module permissions
-  26928: 'public.file_uploads',      // File upload tracking
-  'User': 'auth.users'               // Supabase auth users (UUID-based)
+  11725: 'user_profiles',     // User profiles with UUID foreign keys
+  11726: 'products',          // Products management
+  11727: 'employees',         // Employee management
+  11731: 'licenses',          // License tracking
+  12196: 'deliveries',        // Delivery management
+  12356: 'sales_reports',     // Sales reporting
+  12599: 'stations',          // Station management
+  12611: 'alert_settings',    // Alert configuration
+  12612: 'sms_contacts',      // SMS contact management
+  12613: 'alert_history',     // Alert history
+  12706: 'audit_logs',        // Audit logging
+  24061: 'sms_settings',      // SMS provider settings
+  24062: 'sms_history',       // SMS delivery history
+  24201: 'sms_config',        // SMS configuration
+  24202: 'sms_history',       // Alternative SMS history mapping
+  25712: 'module_access',     // Module permissions
+  26928: 'file_uploads',      // File upload tracking
+  'User': 'auth.users'        // Supabase auth users (explicitly qualified)
 }
 
 // Interface matching the existing window.ezsite.apis
@@ -211,6 +212,8 @@ class SupabaseAdapter implements EzsiteApiAdapter {
     try {
       const tableName = this.getTableName(tableId);
       context.tableName = tableName;
+      
+      // Schema naming issue resolved: Table names now properly resolved via Supabase client schema config
       
       // Handle special case for auth.users table
       if (tableName === 'auth.users') {

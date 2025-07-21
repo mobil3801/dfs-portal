@@ -1,7 +1,7 @@
 {
     "editor.allowVariableFontsInAccessibilityMode": true,
     "editor.autoIndentOnPaste": true,
-    "editor.columnSelection": true,
+    "editor.columnSelection": false,
     "editor.dropIntoEditor.preferences": [
 
     ],
