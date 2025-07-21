@@ -8,18 +8,40 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Shield, 
-  ShieldCheck, 
-  User, 
-  Users, 
-  Settings, 
-  RefreshCw, 
-  Sync, 
-  CheckCircle, 
+import {
+  Shield,
+  ShieldCheck,
+  User,
+  Settings,
+  RefreshCw,
+  Sync,
+  CheckCircle,
   AlertCircle,
   Info
 } from 'lucide-react';
+
+/**
+ * Protected component to demonstrate admin access control
+ */
+const ProtectedComponent: React.FC = () => (
+  <Card className="border-green-200 bg-green-50">
+    <CardHeader>
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-5 w-5 text-green-600" />
+        <CardTitle className="text-green-800">Protected Content</CardTitle>
+      </div>
+      <CardDescription className="text-green-700">
+        This content is only visible to users with admin access.
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <p className="text-green-800">
+        🎉 Congratulations! You have successfully accessed admin-protected content.
+        This demonstrates that the admin access control system is working correctly.
+      </p>
+    </CardContent>
+  </Card>
+);
 
 /**
  * Comprehensive demo page showcasing the admin access control system
@@ -36,13 +58,12 @@ const AdminAccessControlDemo: React.FC = () => {
     synchronizeRoles
   } = useAuth();
   
-  const { 
-    isAdmin: hookIsAdmin, 
-    isLoading: hookLoading, 
+  const {
+    isAdmin: hookIsAdmin,
+    isLoading: hookLoading,
     error: hookError,
     checkAdminStatus,
-    synchronizeRoles: hookSyncRoles,
-    refreshAdminStatus
+    synchronizeRoles: hookSyncRoles
   } = useAdminRole();
 
   const [demoResults, setDemoResults] = useState<any>({});
@@ -118,25 +139,64 @@ const AdminAccessControlDemo: React.FC = () => {
     }
   }, [isAuthenticated, user, userProfile]);
 
-  const ProtectedComponent: React.FC = () => (
-    <Card className="border-green-200 bg-green-50">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-green-600" />
-          <CardTitle className="text-green-800">Protected Content</CardTitle>
+  /**
+   * Render the test results content
+   */
+  const renderTestResults = () => {
+    if (demoResults.error) {
+      return (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Test Error</AlertTitle>
+          <AlertDescription>{demoResults.error}</AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (demoResults.roleChecks) {
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(demoResults.roleChecks).map(([method, result]) => (
+              <div key={method} className="p-3 border rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  {result ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <span className="font-medium">{method}</span>
+                </div>
+                <Badge variant={result ? "default" : "destructive"}>
+                  {result ? 'ADMIN' : 'NOT ADMIN'}
+                </Badge>
+              </div>
+            ))}
+          </div>
+          
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Test Results</AlertTitle>
+            <AlertDescription>
+              All admin checks should return the same result. If they differ,
+              there may be a synchronization issue between role storage sources.
+            </AlertDescription>
+          </Alert>
+          
+          <details className="p-4 border rounded-lg">
+            <summary className="cursor-pointer font-medium">Raw Test Data</summary>
+            <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+              {JSON.stringify(demoResults, null, 2)}
+            </pre>
+          </details>
         </div>
-        <CardDescription className="text-green-700">
-          This content is only visible to users with admin access.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-green-800">
-          🎉 Congratulations! You have successfully accessed admin-protected content.
-          This demonstrates that the admin access control system is working correctly.
-        </p>
-      </CardContent>
-    </Card>
-  );
+      );
+    }
+
+    return (
+      <p className="text-muted-foreground">No test results yet. Click "Run Tests" to start.</p>
+    );
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -237,51 +297,7 @@ const AdminAccessControlDemo: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {demoResults.error ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Test Error</AlertTitle>
-                  <AlertDescription>{demoResults.error}</AlertDescription>
-                </Alert>
-              ) : demoResults.roleChecks ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(demoResults.roleChecks).map(([method, result]) => (
-                      <div key={method} className="p-3 border rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          {result ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4 text-red-600" />
-                          )}
-                          <span className="font-medium">{method}</span>
-                        </div>
-                        <Badge variant={result ? "default" : "destructive"}>
-                          {result ? 'ADMIN' : 'NOT ADMIN'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Test Results</AlertTitle>
-                    <AlertDescription>
-                      All admin checks should return the same result. If they differ, 
-                      there may be a synchronization issue between role storage sources.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <details className="p-4 border rounded-lg">
-                    <summary className="cursor-pointer font-medium">Raw Test Data</summary>
-                    <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
-                      {JSON.stringify(demoResults, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No test results yet. Click "Run Tests" to start.</p>
-              )}
+              {renderTestResults()}
             </CardContent>
           </Card>
         </TabsContent>

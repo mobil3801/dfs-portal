@@ -108,7 +108,7 @@ BEGIN
     NEW.updated_at = timezone('utc'::text, now());
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'; -- PostgreSQL procedural language
 
 -- Function to log role changes
 CREATE OR REPLACE FUNCTION public.log_role_change()
@@ -132,7 +132,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'; -- PostgreSQL procedural language
 
 -- Function to get user permissions
 CREATE OR REPLACE FUNCTION public.get_user_permissions(p_user_id INTEGER)
@@ -144,7 +144,7 @@ BEGIN
     JOIN public.role_permissions rp ON up.role::user_role = rp.role_name
     WHERE up.user_id = p_user_id AND up.is_active = true;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'; -- PostgreSQL procedural language
 
 -- Function to check if user has permission
 CREATE OR REPLACE FUNCTION public.user_has_permission(p_user_id INTEGER, p_resource resource_type, p_action permission_action)
@@ -155,7 +155,7 @@ BEGIN
         WHERE gup.resource = p_resource AND gup.action = p_action AND gup.granted = true
     );
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'; -- PostgreSQL procedural language
 
 -- ============================================================================
 -- TRIGGERS

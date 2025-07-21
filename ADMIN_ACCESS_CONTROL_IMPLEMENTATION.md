@@ -131,6 +131,7 @@ Execute the SQL schema to create the roles management system:
 
 ```bash
 # Run in Supabase SQL Editor or via CLI
+# Using PostgreSQL command-line client (psql)
 psql -h your-supabase-host -U postgres -d postgres -f database/roles-schema.sql
 ```
 
