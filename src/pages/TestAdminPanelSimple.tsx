@@ -35,6 +35,39 @@ const mockUserProfiles = [
     hire_date: '2024-03-01',
     is_active: false,
     detailed_permissions: '{}'
+  },
+  {
+    id: 4,
+    user_id: 4,
+    role: undefined, // Edge case: undefined role
+    station: 'MOBIL',
+    employee_id: '', // Edge case: empty string
+    phone: '', // Edge case: empty string
+    hire_date: '2024-04-01',
+    is_active: true,
+    detailed_permissions: '{}'
+  },
+  {
+    id: 5,
+    user_id: 5,
+    role: 'Employee',
+    station: null, // Edge case: null station
+    employee_id: '   ', // Edge case: whitespace only
+    phone: '!@#$%^&*()', // Edge case: special characters
+    hire_date: null,
+    is_active: true,
+    detailed_permissions: null
+  },
+  {
+    id: 6,
+    user_id: 6,
+    role: 'ADMINISTRATOR', // Edge case: uppercase variation
+    station: 'ALL',
+    employee_id: 'VeryLongEmployeeIdThatMightCauseLayoutIssuesInTheTableDisplay123456789',
+    phone: '+1 (555) 123-4567 ext. 890', // Edge case: formatted phone
+    hire_date: '2024-05-01',
+    is_active: true,
+    detailed_permissions: '{}'
   }
 ];
 
@@ -78,9 +111,14 @@ const TestAdminPanelSimple = () => {
           Test Admin Panel - Testing toLowerCase() Fix
         </h1>
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-6">
-          <p className="font-bold">Test Scenario:</p>
-          <p>This page tests the RealTimeAdminDashboard with mock data including null values for employee_id and phone fields.</p>
-          <p>The third user (EMP003) has null values which previously caused the TypeError.</p>
+          <p className="font-bold">Test Scenarios:</p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>User 3: null employee_id and phone (original bug scenario)</li>
+            <li>User 4: undefined role, empty string employee_id and phone</li>
+            <li>User 5: null station, whitespace-only employee_id, special characters in phone</li>
+            <li>User 6: uppercase role variation, very long employee_id, formatted phone number</li>
+          </ul>
+          <p className="mt-2 font-semibold">All edge cases should be handled without errors.</p>
         </div>
         
         {/* Mock auth context for the component */}
