@@ -2,15 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Users,
   Database,
@@ -22,26 +19,14 @@ import {
   RefreshCw,
   CheckCircle,
   AlertCircle,
-  Eye,
   Settings,
-  Clock,
   Building2,
-  Phone,
-  Calendar,
   Globe,
-  Loader2 } from
-'lucide-react';
+  Loader2
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import CreateUserDialog from '@/components/CreateUserDialog';
-
-interface User {
-  ID: number;
-  Name: string;
-  Email: string;
-  CreateTime: string;
-  Roles: string;
-}
 
 interface UserProfile {
   id: number;
@@ -71,7 +56,6 @@ const RealTimeAdminDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -86,7 +70,6 @@ const RealTimeAdminDashboard = () => {
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('All');
   const [filterStation, setFilterStation] = useState('All');
