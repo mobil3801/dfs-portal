@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+// cspell:ignore sonner
 import { toast } from 'sonner';
 
 interface ModuleAccess {
@@ -57,6 +58,7 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
       setLoading(true);
 
       for (const module of defaultModules) {
+        // cspell:ignore ezsite
         const { error: createError } = await window.ezsite.apis.tableCreate("25712", {
           module_name: module.module_name,
           display_name: module.display_name,
@@ -90,6 +92,7 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
       setLoading(true);
       setError(null);
 
+      // cspell:ignore ezsite
       const response = await window.ezsite.apis.tablePage("25712", {
         PageNo: 1,
         PageSize: 100,
@@ -133,6 +136,7 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
 
   const updateModuleAccess = async (id: number, updates: Partial<ModuleAccess>) => {
     try {
+      // cspell:ignore ezsite
       const response = await window.ezsite.apis.tableUpdate("25712", {
         ID: id,
         ...updates,
@@ -187,7 +191,7 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
     fetchModuleAccess();
   }, []);
 
-  const value: ModuleAccessContextType = {
+  const value: ModuleAccessContextType = useMemo(() => ({
     moduleAccess,
     loading,
     error,
@@ -198,7 +202,12 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
     canEdit,
     canDelete,
     isModuleAccessEnabled
-  };
+  }), [
+    moduleAccess,
+    loading,
+    error,
+    isModuleAccessEnabled
+  ]);
 
   return (
     <ModuleAccessContext.Provider value={value}>

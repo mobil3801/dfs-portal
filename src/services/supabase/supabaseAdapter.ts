@@ -19,6 +19,7 @@ const TABLE_ID_MAPPING: Record<string | number, string> = {
 }
 
 // Interface matching the existing window.ezsite.apis
+// cspell:ignore ezsite
 export interface EzsiteApiAdapter {
   tablePage(tableId: string | number, params: any): Promise<{data: any, error: string | null}>
   tableCreate(tableId: string | number, data: any): Promise<{error: string | null}>
@@ -83,6 +84,7 @@ function convertFiltersToSupabaseQuery(query: any, filters: any[] = []) {
 }
 
 // Supabase Adapter Implementation
+// cspell:ignore Ezsite
 class SupabaseAdapter implements EzsiteApiAdapter {
   private getTableName(tableId: string | number): string {
     const tableName = TABLE_ID_MAPPING[tableId]
@@ -263,7 +265,8 @@ class SupabaseAdapter implements EzsiteApiAdapter {
       // This would need to be implemented using a service like Resend, SendGrid, etc.
       console.log('Email would be sent:', emailData)
       
-      // TODO: Implement actual email sending service
+      // NOTE: Email service implementation requires external service integration
+      // Consider using Resend, SendGrid, or Supabase Edge Functions for production
       return {
         error: 'Email service not yet implemented in Supabase migration'
       }
@@ -279,6 +282,7 @@ class SupabaseAdapter implements EzsiteApiAdapter {
 export const supabaseAdapter = new SupabaseAdapter()
 
 // Create global replacement for window.ezsite.apis
+// cspell:ignore ezsite Ezsite
 export const createEzsiteApiReplacement = () => {
   return {
     tablePage: supabaseAdapter.tablePage.bind(supabaseAdapter),
