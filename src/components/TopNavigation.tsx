@@ -25,10 +25,139 @@ import {
   Building,
   Menu,
   X,
-  AlertCircle,
   MoreHorizontal,
   ClipboardList } from
 'lucide-react';
+
+// Navigation Link Component (moved outside parent)
+interface NavigationLinkProps {
+  item: {
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    requiredRole: string | null;
+  };
+  mobile?: boolean;
+  dropdown?: boolean;
+  navigate: (path: string) => void;
+  setMobileMenuOpen: (open: boolean) => void;
+  isActiveRoute: (href: string) => boolean;
+  canAccessRoute: (requiredRole: string | null) => boolean;
+}
+
+const NavigationLink: React.FC<NavigationLinkProps> = ({
+  item,
+  mobile = false,
+  dropdown = false,
+  navigate,
+  setMobileMenuOpen,
+  isActiveRoute,
+  canAccessRoute
+}) => {
+  if (!canAccessRoute(item.requiredRole)) return null;
+
+  const Icon = item.icon;
+  const isActive = isActiveRoute(item.href);
+
+  let baseClasses;
+  if (mobile) {
+    baseClasses = "flex items-center space-x-3 px-4 py-3 text-left w-full transition-colors text-sm font-medium rounded-md mx-2";
+  } else if (dropdown) {
+    baseClasses = "flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900 w-full";
+  } else {
+    baseClasses = "flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 whitespace-nowrap text-sm font-medium hover:scale-105 min-w-fit max-w-fit flex-shrink-0";
+  }
+
+  let activeClasses;
+  if (isActive) {
+    activeClasses = "bg-blue-600 text-white shadow-md";
+  } else if (mobile) {
+    activeClasses = "text-gray-700 hover:bg-gray-100 hover:text-gray-900";
+  } else if (dropdown) {
+    activeClasses = "text-gray-700 hover:text-gray-900";
+  } else {
+    activeClasses = "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm";
+  }
+
+  const handleClick = () => {
+    navigate(item.href);
+    if (mobile) setMobileMenuOpen(false);
+  };
+
+  if (dropdown) {
+    return (
+      <DropdownMenuItem onClick={handleClick} className={baseClasses}>
+        <Icon className="mr-2 h-4 w-4" />
+        {item.name}
+      </DropdownMenuItem>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`${baseClasses} ${activeClasses}`}
+      data-testid={`nav-${item.name.toLowerCase()}`}
+    >
+      <Icon className="h-4 w-4 flex-shrink-0" />
+      <span className="ml-2">{item.name}</span>
+    </button>
+  );
+};
+
+// More Menu Dropdown Component (moved outside parent)
+interface MoreMenuDropdownProps {
+  accessibleSecondaryItems: Array<{
+    name: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    requiredRole: string | null;
+  }>;
+  navigate: (path: string) => void;
+  setMobileMenuOpen: (open: boolean) => void;
+  isActiveRoute: (href: string) => boolean;
+  canAccessRoute: (requiredRole: string | null) => boolean;
+}
+
+const MoreMenuDropdown: React.FC<MoreMenuDropdownProps> = ({
+  accessibleSecondaryItems,
+  navigate,
+  setMobileMenuOpen,
+  isActiveRoute,
+  canAccessRoute
+}) => {
+  if (accessibleSecondaryItems.length === 0) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 whitespace-nowrap text-sm font-medium hover:scale-105 min-w-fit max-w-fit flex-shrink-0 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm"
+        >
+          <MoreHorizontal className="h-4 w-4 flex-shrink-0" />
+          <span className="ml-2">More Menu</span>
+          <ChevronDown className="h-3 w-3 flex-shrink-0" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-56">
+        <DropdownMenuLabel>More Options</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {accessibleSecondaryItems.map((item) => (
+          <NavigationLink
+            key={item.href}
+            item={item}
+            dropdown
+            navigate={navigate}
+            setMobileMenuOpen={setMobileMenuOpen}
+            isActiveRoute={isActiveRoute}
+            canAccessRoute={canAccessRoute}
+          />
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const TopNavigation = () => {
   const { user, logout, isAdmin, isManager, isAuthenticated, isLoading, isInitialized } = useAuth();
@@ -40,12 +169,23 @@ const TopNavigation = () => {
   // Debug logging
   useEffect(() => {
     if (debugMode) {
+      let userRole = 'None';
+      if (user) {
+        if (isAdmin()) {
+          userRole = 'Admin';
+        } else if (isManager()) {
+          userRole = 'Manager';
+        } else {
+          userRole = 'Employee';
+        }
+      }
+      
       console.log('TopNavigation Debug:', {
         isAuthenticated,
         isLoading,
         isInitialized,
         user: user?.Name,
-        userRole: user ? isAdmin() ? 'Admin' : isManager() ? 'Manager' : 'Employee' : 'None'
+        userRole
       });
     }
   }, [isAuthenticated, isLoading, isInitialized, user, isAdmin, isManager, debugMode]);
@@ -97,7 +237,7 @@ const TopNavigation = () => {
     name: 'Employee',
     href: '/employees',
     icon: Users,
-    requiredRole: 'manager'
+    requiredRole: null // Changed: Now accessible to all authenticated users
   }];
 
 
@@ -166,6 +306,28 @@ const TopNavigation = () => {
     // Ensure user is authenticated
     if (!isAuthenticated) return false;
 
+    // Debug logging for Employee navigation
+    if (debugMode) {
+      let userRole = 'None';
+      if (user) {
+        if (isAdmin()) {
+          userRole = 'Admin';
+        } else if (isManager()) {
+          userRole = 'Manager';
+        } else {
+          userRole = 'Employee';
+        }
+      }
+      
+      console.log('DEBUG: canAccessRoute check:', {
+        requiredRole,
+        isAuthenticated,
+        isAdmin: isAdmin(),
+        isManager: isManager(),
+        userRole
+      });
+    }
+
     // Check specific roles
     if (requiredRole === 'admin') return isAdmin();
     if (requiredRole === 'manager') return isManager();
@@ -177,80 +339,9 @@ const TopNavigation = () => {
   // Get accessible items for debugging
   const accessiblePrimaryItems = primaryNavItems.filter((item) => canAccessRoute(item.requiredRole));
   const accessibleSecondaryItems = secondaryNavItems.filter((item) => canAccessRoute(item.requiredRole));
-  const allNavigationItems = [...primaryNavItems, ...secondaryNavItems];
 
 
-  const NavigationLink = ({ item, mobile = false, dropdown = false }: {item: any;mobile?: boolean;dropdown?: boolean;}) => {
-    if (!canAccessRoute(item.requiredRole)) return null;
 
-    const Icon = item.icon;
-    const isActive = isActiveRoute(item.href);
-
-    const baseClasses = mobile ?
-    "flex items-center space-x-3 px-4 py-3 text-left w-full transition-colors text-sm font-medium rounded-md mx-2" :
-    dropdown ?
-    "flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900 w-full" :
-    "flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 whitespace-nowrap text-sm font-medium hover:scale-105 min-w-fit max-w-fit flex-shrink-0";
-
-    const activeClasses = isActive ?
-    "bg-blue-600 text-white shadow-md" :
-    mobile ?
-    "text-gray-700 hover:bg-gray-100 hover:text-gray-900" :
-    dropdown ?
-    "text-gray-700 hover:text-gray-900" :
-    "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm";
-
-    const handleClick = () => {
-      navigate(item.href);
-      if (mobile) setMobileMenuOpen(false);
-    };
-
-    if (dropdown) {
-      return (
-        <DropdownMenuItem onClick={handleClick} className={baseClasses}>
-          <Icon className="mr-2 h-4 w-4" />
-          {item.name}
-        </DropdownMenuItem>);
-
-    }
-
-    return (
-      <button
-        onClick={handleClick}
-        className={`${baseClasses} ${activeClasses}`}
-        data-testid={`nav-${item.name.toLowerCase()}`}>
-        <Icon className="h-4 w-4 flex-shrink-0" />
-        <span className="ml-2">{item.name}</span>
-      </button>);
-
-  };
-
-  // More Menu Dropdown Component
-  const MoreMenuDropdown = () => {
-    if (accessibleSecondaryItems.length === 0) return null;
-
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 whitespace-nowrap text-sm font-medium hover:scale-105 min-w-fit max-w-fit flex-shrink-0 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm">
-
-            <MoreHorizontal className="h-4 w-4 flex-shrink-0" />
-            <span className="ml-2">More Menu</span>
-            <ChevronDown className="h-3 w-3 flex-shrink-0" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-56">
-          <DropdownMenuLabel>More Options</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {accessibleSecondaryItems.map((item) =>
-          <NavigationLink key={item.href} item={item} dropdown />
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>);
-
-  };
 
   // Show loading state for navigation
   if (!isInitialized || isLoading) {
@@ -304,12 +395,25 @@ const TopNavigation = () => {
             <nav className="hidden lg:flex items-center flex-1 justify-center min-w-0 mx-4">
               <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide max-w-full">
                 {/* Primary Navigation Items */}
-                {accessiblePrimaryItems.map((item) =>
-                <NavigationLink key={item.href} item={item} />
-                )}
+                {accessiblePrimaryItems.map((item) => (
+                  <NavigationLink
+                    key={item.href}
+                    item={item}
+                    navigate={navigate}
+                    setMobileMenuOpen={setMobileMenuOpen}
+                    isActiveRoute={isActiveRoute}
+                    canAccessRoute={canAccessRoute}
+                  />
+                ))}
                 
                 {/* More Menu Dropdown */}
-                <MoreMenuDropdown />
+                <MoreMenuDropdown
+                  accessibleSecondaryItems={accessibleSecondaryItems}
+                  navigate={navigate}
+                  setMobileMenuOpen={setMobileMenuOpen}
+                  isActiveRoute={isActiveRoute}
+                  canAccessRoute={canAccessRoute}
+                />
               </div>
             </nav>
 
@@ -374,25 +478,37 @@ const TopNavigation = () => {
         </div>
 
         {/* Debug Information */}
-        {debugMode &&
+        {debugMode && (
         <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
             <div className="text-xs text-yellow-800">
-              <strong>Debug:</strong> Auth: {isAuthenticated ? 'Yes' : 'No'} | 
-              Primary: {accessiblePrimaryItems.length} | Secondary: {accessibleSecondaryItems.length} | 
-              Role: {isAdmin() ? 'Admin' : isManager() ? 'Manager' : 'Employee'} | 
+              <strong>Debug:</strong> Auth: {isAuthenticated ? 'Yes' : 'No'} |
+              Primary: {accessiblePrimaryItems.length} | Secondary: {accessibleSecondaryItems.length} |
+              Role: {(() => {
+                if (isAdmin()) return 'Admin';
+                if (isManager()) return 'Manager';
+                return 'Employee';
+              })()} |
               User: {user?.Name || 'None'}
             </div>
           </div>
-        }
+        )}
       </header>
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen &&
       <div className="lg:hidden fixed inset-0 z-50">
           {/* Overlay */}
-          <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
-          onClick={() => setMobileMenuOpen(false)} />
+          <button
+            type="button"
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 border-none cursor-default"
+            onClick={() => setMobileMenuOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setMobileMenuOpen(false);
+              }
+            }}
+            aria-label="Close navigation menu"
+          />
 
           {/* Menu Panel */}
           <div className={`fixed top-0 right-0 w-80 max-w-[90vw] h-full bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-hidden ${
@@ -422,19 +538,35 @@ const TopNavigation = () => {
               <div className="flex-1 py-4 overflow-y-auto min-h-0">
                 <div className="space-y-2 px-2">
                   {/* Primary Navigation Items */}
-                  {accessiblePrimaryItems.map((item) =>
-                <NavigationLink key={item.href} item={item} mobile />
-                )}
+                  {accessiblePrimaryItems.map((item) => (
+                    <NavigationLink
+                      key={item.href}
+                      item={item}
+                      mobile
+                      navigate={navigate}
+                      setMobileMenuOpen={setMobileMenuOpen}
+                      isActiveRoute={isActiveRoute}
+                      canAccessRoute={canAccessRoute}
+                    />
+                  ))}
                   
                   {/* Divider */}
-                  {accessibleSecondaryItems.length > 0 &&
-                <div className="border-t border-gray-200 my-4 mx-2"></div>
-                }
+                  {accessibleSecondaryItems.length > 0 && (
+                    <div className="border-t border-gray-200 my-4 mx-2"></div>
+                  )}
                   
                   {/* Secondary Navigation Items */}
-                  {accessibleSecondaryItems.map((item) =>
-                <NavigationLink key={item.href} item={item} mobile />
-                )}
+                  {accessibleSecondaryItems.map((item) => (
+                    <NavigationLink
+                      key={item.href}
+                      item={item}
+                      mobile
+                      navigate={navigate}
+                      setMobileMenuOpen={setMobileMenuOpen}
+                      isActiveRoute={isActiveRoute}
+                      canAccessRoute={canAccessRoute}
+                    />
+                  ))}
                 </div>
               </div>
               
