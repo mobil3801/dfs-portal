@@ -60,6 +60,8 @@ const SupabaseTestPage = lazy(() => import('@/pages/supabase-test'));
 const ProfilePictureDemo = lazy(() => import('@/components/ProfilePictureDemo'));
 const OverflowTestPage = lazy(() => import('@/pages/OverflowTestPage'));
 const OverflowTestingPage = lazy(() => import('@/pages/OverflowTestingPage'));
+const TestAdminPanel = lazy(() => import('@/pages/TestAdminPanel'));
+const TestAdminPanelSimple = lazy(() => import('@/pages/TestAdminPanelSimple'));
 
 import './App.css';
 
@@ -161,6 +163,16 @@ const AppRouter = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/onauthsuccess" element={<OnAuthSuccessPage />} />
           <Route path="/resetpassword" element={<ResetPasswordPage />} />
+          <Route path="/test-admin-panel" element={
+            <Suspense fallback={<PageLoader />}>
+              <TestAdminPanel />
+            </Suspense>
+          } />
+          <Route path="/test-admin-simple" element={
+            <Suspense fallback={<PageLoader />}>
+              <TestAdminPanelSimple />
+            </Suspense>
+          } />
           
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

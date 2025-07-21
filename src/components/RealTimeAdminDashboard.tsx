@@ -249,9 +249,9 @@ const RealTimeAdminDashboard = () => {
 
   const filteredProfiles = userProfiles.filter((profile) => {
     const matchesSearch =
-    profile.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.role.toLowerCase().includes(searchTerm.toLowerCase());
+    (profile.employee_id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (profile.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (profile.role?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     const matchesRole = filterRole === 'All' || profile.role === filterRole;
     const matchesStation = filterStation === 'All' || profile.station === filterStation;
