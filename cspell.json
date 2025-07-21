@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "nosniff",
+    "clickjacking",
+    "HSTS",
+    "CSRF",
+    "XSS",
+    "CORS",
+    "CSP",
+    "MIME",
+    "referer",
+    "pragma",
+    "samesite",
+    "httponly",
+    "csrf",
+    "xframe",
+    "xcontent",
+    "xxss",
+    "supabase",
+    "vercel",
+    "vite",
+    "tsx",
+    "jsx",
+    "tsconfig",
+    "eslint",
+    "postcss",
+    "tailwind"
+  ],
+  "dictionaries": [
+    "web-security",
+    "web-development"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "web-security",
+      "words": [
+        "nosniff",
+        "clickjacking",
+        "HSTS",
+        "CSRF",
+        "XSS",
+        "CORS",
+        "CSP",
+        "MIME",
+        "samesite",
+        "httponly",
+        "xframe",
+        "xcontent",
+        "xxss"
+      ]
+    },
+    {
+      "name": "web-development", 
+      "words": [
+        "supabase",
+        "vercel",
+        "vite",
+        "tsx",
+        "jsx",
+        "tsconfig",
+        "eslint",
+        "postcss",
+        "tailwind"
+      ]
+    }
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    ".git/**",
+    "**/*.min.js",
+    "**/*.map"
+  ],
+  "allowCompoundWords": true,
+  "caseSensitive": false
+}
