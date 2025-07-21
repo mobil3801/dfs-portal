@@ -702,16 +702,9 @@ const fetchStations = async () => {
                 <div className="flex items-center space-x-3">
                   <Database className="w-8 h-8 text-purple-600" />
                   <div>
-                    <p className="text-sm text-gray-600">With Permissions</p>
+                    <p className="text-sm text-gray-600">Managers</p>
                     <p className="text-2xl font-bold">
-                      {userProfiles.filter((p) => {
-                        try {
-                          const perms = JSON.parse(p.detailed_permissions || '{}');
-                          return Object.keys(perms).length > 0;
-                        } catch {
-                          return false;
-                        }
-                      }).length}
+                      {userProfiles.filter((p) => p.role === 'manager').length}
                     </p>
                   </div>
                 </div>
