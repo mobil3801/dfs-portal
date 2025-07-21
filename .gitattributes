@@ -1,0 +1,30 @@
+# Ensure LF line endings for all text files
+* text=auto
+
+# Force LF for shell scripts and config files
+*.sh text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Ensure executable scripts maintain LF endings
+package.json text eol=lf
+*.config.js text eol=lf
+*.config.ts text eol=lf
+
+# Binary files should be left untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
