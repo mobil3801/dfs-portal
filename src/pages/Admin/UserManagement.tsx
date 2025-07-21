@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,45 +31,26 @@ import {
   Trash2,
   Search,
   UserCheck,
-  UserX,
   Shield,
-  Mail,
-  Phone,
-  Calendar,
-  Building2,
   Settings,
-  Clock,
-  Activity,
-  Eye,
-  FileText,
-  AlertCircle,
   RefreshCw,
-  Database,
-  CheckCircle2 } from
+  Database } from
 'lucide-react';
 
-interface User {
-  ID: number;
-  Name: string;
-  Email: string;
-  CreateTime: string;
-}
-
 interface UserProfile {
-  id: number;
-  user_id: number;
+  id: string; // UUID
+  user_id: string; // UUID
   role: string;
-  station: string;
+  station_access: string[]; // Array of station UUIDs
   employee_id: string;
   phone: string;
   hire_date: string;
   is_active: boolean;
-  detailed_permissions: string;
+  // detailed_permissions is not a real column, removing for now
 }
 
 const UserManagement: React.FC = () => {
   const { isAdmin } = useAdminAccess();
-  const [users, setUsers] = useState<User[]>([]);
   const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -97,7 +77,7 @@ const UserManagement: React.FC = () => {
   });
 
   const roles = ['admin', 'manager', 'employee'];
-  const stations = ['ALL', 'MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  const [stations, setStations] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     user_id: 0,
@@ -117,6 +97,7 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    fetchStations();
     // Set up real-time refresh interval
     const interval = setInterval(() => {
       fetchData();
@@ -124,10 +105,29 @@ const UserManagement: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+const fetchStations = async () => {
+      try {
+        const { data, error } = await window.ezsite.apis.tablePage(12599, {
+          PageNo: 1,
+          PageSize: 100, // Assuming max 100 stations, adjust if needed
+        });
+        if (error) {
+          throw new Error(error);
+        }
+        setStations(data?.List || []);
+      } catch (error) {
+        console.error('Error fetching stations:', error);
+        toast({
+          title: "Database Error",
+          description: `Failed to fetch stations`,
+          variant: "destructive"
+        });
+      }
+    };
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchUserProfiles(), fetchUsers()]);
+    await fetchUserProfiles();
     setLoading(false);
   };
 
@@ -141,22 +141,6 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  const fetchUsers = async () => {
-    try {
-      
-      const { data: currentUser, error: userError } = await window.ezsite.apis.getUserInfo();
-      if (userError) {
-        
-        setUsers([]);
-        return;
-      }
-      
-      setUsers([currentUser]);
-    } catch (error) {
-      console.error('Error fetching current user info:', error);
-      setUsers([]);
-    }
-  };
 
   const fetchUserProfiles = async () => {
     try {
@@ -327,7 +311,7 @@ const UserManagement: React.FC = () => {
       const updates = selectedData.map((profile) => ({
         id: profile.id,
         ...(batchEditData.role && { role: batchEditData.role }),
-        ...(batchEditData.station && { station: batchEditData.station }),
+        ...(batchEditData.station_access && { station_access: batchEditData.station_access }),
         is_active: batchEditData.is_active
       }));
 
@@ -392,7 +376,7 @@ const UserManagement: React.FC = () => {
     setFormData({
       user_id: profile.user_id,
       role: profile.role,
-      station: profile.station,
+      station_access: profile.station_access || [],
       employee_id: profile.employee_id,
       phone: profile.phone,
       hire_date: profile.hire_date || '',
@@ -403,10 +387,12 @@ const UserManagement: React.FC = () => {
 
   const filteredProfiles = userProfiles.filter((profile) => {
     const matchesSearch =
-    profile.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.phone.toLowerCase().includes(searchTerm.toLowerCase());
+    (profile.employee_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (profile.phone || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
-    const matchesStation = selectedStation === 'All' || profile.station === selectedStation;
+    // Temporarily disable station filtering until it's properly implemented
+    // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
+    const matchesStation = true;
 
     return matchesSearch && matchesRole && matchesStation;
   });
@@ -420,59 +406,23 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station) {
-      case 'ALL':return 'bg-blue-100 text-blue-800';
-      case 'MOBIL':return 'bg-purple-100 text-purple-800';
-      case 'AMOCO ROSEDALE':return 'bg-orange-100 text-orange-800';
-      case 'AMOCO BROOKLYN':return 'bg-teal-100 text-teal-800';
-      default:return 'bg-gray-100 text-gray-800';
-    }
+  const getStationBadgeColor = (stationName: string) => {
+    if (!stationName) return 'bg-gray-100 text-gray-800';
+    const station = stations.find(s => s.name === stationName);
+    if (!station) return 'bg-gray-100 text-gray-800';
+
+    // Logic to return a color based on station name/id - can be expanded
+    const hash = station.id.split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const colors = [
+      'bg-blue-100 text-blue-800',
+      'bg-purple-100 text-purple-800',
+      'bg-orange-100 text-orange-800',
+      'bg-teal-100 text-teal-800',
+      'bg-pink-100 text-pink-800',
+    ];
+    return colors[Math.abs(hash) % colors.length];
   };
 
-  const getPermissionSummary = (profile: UserProfile) => {
-    try {
-      if (!profile.detailed_permissions || profile.detailed_permissions.trim() === '' || profile.detailed_permissions === '{}') {
-        return {
-          summary: 'No permissions set',
-          details: 'Permissions not configured',
-          hasAccess: false,
-          viewCount: 0,
-          editCount: 0,
-          createCount: 0
-        };
-      }
-
-      const permissions = JSON.parse(profile.detailed_permissions);
-      const contentAreas = [
-      'dashboard', 'products', 'employees', 'sales_reports', 'vendors',
-      'orders', 'licenses', 'salary', 'inventory', 'delivery', 'settings',
-      'user_management', 'site_management', 'system_logs', 'security_settings'];
-
-
-      const viewCount = contentAreas.filter((area) => permissions[area]?.view).length;
-      const editCount = contentAreas.filter((area) => permissions[area]?.edit).length;
-      const createCount = contentAreas.filter((area) => permissions[area]?.create).length;
-
-      return {
-        summary: `${viewCount}/${contentAreas.length} areas`,
-        details: `View: ${viewCount}, Edit: ${editCount}, Create: ${createCount}`,
-        hasAccess: viewCount > 0,
-        viewCount,
-        editCount,
-        createCount
-      };
-    } catch {
-      return {
-        summary: 'Invalid permissions',
-        details: 'Permission data corrupted',
-        hasAccess: false,
-        viewCount: 0,
-        editCount: 0,
-        createCount: 0
-      };
-    }
-  };
 
   // Check admin access first
   if (!isAdmin) {
@@ -647,13 +597,13 @@ const UserManagement: React.FC = () => {
                     </div>
                     <div>
                       <Label htmlFor="station">Station</Label>
-                      <Select value={formData.station} onValueChange={(value) => setFormData({ ...formData, station: value })}>
+                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: [value] })}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select a station" />
                         </SelectTrigger>
                         <SelectContent>
                           {stations.map((station) =>
-                          <SelectItem key={station} value={station}>{station}</SelectItem>
+                          <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
@@ -802,7 +752,7 @@ const UserManagement: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="All">All Stations</SelectItem>
                     {stations.map((station) =>
-                    <SelectItem key={station} value={station}>{station}</SelectItem>
+                    <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -844,15 +794,14 @@ const UserManagement: React.FC = () => {
                           checked={filteredProfiles.length > 0 && batchSelection.selectedCount === filteredProfiles.length}
                           onCheckedChange={() => batchSelection.toggleSelectAll(filteredProfiles, (profile) => profile.id)}
                           aria-label="Select all profiles" />
-
+                
                       </TableHead>
                       <TableHead>Employee ID</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Station</TableHead>
+                      <TableHead>Station Access</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Hire Date</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Permissions</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -913,8 +862,8 @@ const UserManagement: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStationBadgeColor(profile.station)}>
-                              {profile.station}
+                            <Badge className={getStationBadgeColor(profile.station_access?.[0])}>
+                              {profile.station_access?.join(', ') || 'N/A'}
                             </Badge>
                           </TableCell>
                           <TableCell>{profile.phone}</TableCell>
@@ -923,21 +872,6 @@ const UserManagement: React.FC = () => {
                             <Badge className={profile.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                               {profile.is_active ? 'Active' : 'Inactive'}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {(() => {
-                          const permSummary = getPermissionSummary(profile);
-                          return (
-                            <div className="space-y-1">
-                                  <Badge
-                                variant={permSummary.hasAccess ? "default" : "secondary"}
-                                className={permSummary.hasAccess ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
-                                    {permSummary.summary}
-                                  </Badge>
-                                  <p className="text-xs text-gray-500">{permSummary.details}</p>
-                                </div>);
-
-                        })()}
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
@@ -1107,14 +1041,14 @@ const UserManagement: React.FC = () => {
           </div>
           <div>
             <Label htmlFor="batch_station">Station</Label>
-            <Select value={batchEditData.station} onValueChange={(value) => setBatchEditData({ ...batchEditData, station: value })}>
+            <Select onValueChange={(value) => setBatchEditData({ ...batchEditData, station_access: [value] })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select station to update" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Keep existing stations</SelectItem>
                 {stations.map((station) =>
-                <SelectItem key={station} value={station}>{station}</SelectItem>
+                <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                 )}
               </SelectContent>
             </Select>
@@ -1149,7 +1083,7 @@ const UserManagement: React.FC = () => {
         isOpen={isCreateUserDialogOpen}
         onClose={() => setIsCreateUserDialogOpen(false)}
         onUserCreated={() => {
-          fetchData(); // Refresh both users and profiles
+          fetchData(); // Refresh user profiles
           toast({
             title: "Success",
             description: "New user account and profile created successfully in production database"
