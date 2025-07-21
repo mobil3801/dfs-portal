@@ -1,4 +1,5 @@
 import { ErrorLogger, ErrorLogEntry } from './errorLogger';
+import { safeIncludes } from '../utils/sanitizeHelper';
 
 // Enhanced error patterns and analytics
 export interface ErrorPattern {
@@ -166,7 +167,7 @@ export class EnhancedErrorLogger extends ErrorLogger {
       errorMessage.includes('async') || errorMessage.includes('promise') || errorMessage.includes('race'))) {
         isMatch = true;
       } else if (patternId === 'form_validation' && (
-      errorMessage.includes('validation') || errorMessage.includes('form') || component?.includes('form'))) {
+      errorMessage.includes('validation') || errorMessage.includes('form') || safeIncludes(component, 'form'))) {
         isMatch = true;
       }
 
@@ -179,7 +180,7 @@ export class EnhancedErrorLogger extends ErrorLogger {
         };
 
         // Add component to pattern if not already included
-        if (component && !updatedPattern.components.includes(component)) {
+        if (component && typeof component === 'string' && !updatedPattern.components.includes(component)) {
           updatedPattern.components.push(component);
         }
 
