@@ -41,6 +41,9 @@ interface AuthContextType {
   isAdmin: () => boolean;
   isManager: () => boolean;
   clearError: () => void;
+  // Dual role checking methods
+  checkRoleFromBothSources: (roleToCheck: string) => boolean;
+  synchronizeRoles: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +93,19 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         return { success: false };
       }
 
+      // Log user metadata for debugging
+      console.log('🔍 DEBUG - Supabase user data:', {
+        id: user.id,
+        email: user.email,
+        metadata: user.user_metadata,
+        appMetadata: user.app_metadata,
+        created_at: user.created_at
+      });
+
+      // Extract role from Supabase auth metadata (dual role storage)
+      const authMetadataRole = user.user_metadata?.role || user.app_metadata?.role;
+      console.log('🔍 DEBUG - Auth metadata role:', authMetadataRole);
+
       // Convert Supabase user to our User interface
       const userData: User = {
         ID: parseInt(user.id.replace(/[^0-9]/g, '').slice(-8)), // Convert UUID to number for compatibility
@@ -129,8 +145,18 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
             profile_image_id: null
           });
         } else if (profileResponse.data?.List?.length > 0) {
-          console.log('✅ User profile found:', profileResponse.data.List[0]);
-          setUserProfile(profileResponse.data.List[0]);
+          const profile = profileResponse.data.List[0];
+          console.log('✅ User profile found:', profile);
+          console.log('🔍 DEBUG - Role analysis:', {
+            rawRole: profile.role,
+            roleType: typeof profile.role,
+            roleLength: profile.role?.length,
+            trimmedRole: profile.role?.trim(),
+            isAdminCheck: profile.role === 'admin',
+            isAdministratorCheck: profile.role === 'Administrator',
+            isAdminUpperCheck: profile.role === 'Admin'
+          });
+          setUserProfile(profile);
         } else {
           console.log('⚠️ No profile found, creating default profile');
           // Create default profile for user without one
@@ -466,12 +492,125 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
   };
 
   const isAdmin = (): boolean => {
-    return userProfile?.role === 'Administrator' || userProfile?.role === 'Admin';
+    console.log('🔍 DEBUG - isAdmin() check:', {
+      userProfile: userProfile ? {
+        id: userProfile.id,
+        role: userProfile.role,
+        roleType: typeof userProfile.role,
+        roleLength: userProfile.role?.length
+      } : null,
+      checking: ['admin', 'Administrator', 'Admin'],
+      exactMatches: {
+        admin: userProfile?.role === 'admin',
+        Administrator: userProfile?.role === 'Administrator',
+        Admin: userProfile?.role === 'Admin'
+      },
+      result: userProfile?.role === 'admin' || userProfile?.role === 'Administrator' || userProfile?.role === 'Admin'
+    });
+    
+    // Check both database enum value 'admin' and legacy values for backward compatibility
+    return userProfile?.role === 'admin' ||
+           userProfile?.role === 'Administrator' ||
+           userProfile?.role === 'Admin';
+  };
+
+  // Dual role checking - verify role from both Supabase auth metadata and database
+  const checkRoleFromBothSources = (roleToCheck: string): boolean => {
+    console.log('🔍 DEBUG - checkRoleFromBothSources:', {
+      roleToCheck,
+      userProfile: userProfile ? {
+        role: userProfile.role,
+        id: userProfile.id
+      } : null,
+      user: user ? {
+        id: user.ID,
+        metadata: user.user_metadata,
+        appMetadata: user.app_metadata
+      } : null
+    });
+
+    // Check if user is authenticated
+    if (!user || !userProfile) {
+      console.log('❌ DEBUG - No user or profile for role check');
+      return false;
+    }
+
+    // Get role from Supabase auth metadata
+    const authMetadataRole = user.user_metadata?.role || user.app_metadata?.role;
+    
+    // Get role from database profile
+    const profileRole = userProfile.role;
+
+    // Normalize roles for comparison (handle both lowercase and capitalized variants)
+    const normalizeRole = (role: string) => role?.toLowerCase().trim();
+    const normalizedRoleToCheck = normalizeRole(roleToCheck);
+    
+    const authRoleMatches = normalizeRole(authMetadataRole) === normalizedRoleToCheck;
+    const profileRoleMatches = normalizeRole(profileRole) === normalizedRoleToCheck;
+
+    console.log('🔍 DEBUG - Role comparison:', {
+      authMetadataRole,
+      profileRole,
+      normalizedRoleToCheck,
+      authRoleMatches,
+      profileRoleMatches,
+      result: authRoleMatches || profileRoleMatches
+    });
+
+    // Return true if role matches in either source
+    return authRoleMatches || profileRoleMatches;
+  };
+
+  // Synchronize roles between Supabase auth metadata and database
+  const synchronizeRoles = async (): Promise<void> => {
+    if (!user || !userProfile) {
+      console.log('⚠️ Cannot synchronize roles: No user or profile');
+      return;
+    }
+
+    try {
+      console.log('🔄 Starting role synchronization...');
+      
+      // Get current roles from both sources
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const authMetadataRole = currentUser?.user_metadata?.role || currentUser?.app_metadata?.role;
+      const profileRole = userProfile.role;
+
+      console.log('🔍 DEBUG - Current roles:', {
+        authMetadataRole,
+        profileRole,
+        needsSync: authMetadataRole !== profileRole
+      });
+
+      // If roles don't match, update auth metadata to match database role
+      if (authMetadataRole !== profileRole) {
+        console.log('🔄 Synchronizing auth metadata with database role...');
+        
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { role: profileRole }
+        });
+
+        if (updateError) {
+          console.error('❌ Failed to synchronize roles:', updateError);
+        } else {
+          console.log('✅ Roles synchronized successfully');
+        }
+      } else {
+        console.log('✅ Roles already in sync');
+      }
+    } catch (error) {
+      console.error('❌ Role synchronization failed:', error);
+    }
   };
 
   const isManager = (): boolean => {
-    return userProfile?.role === 'Management' || userProfile?.role === 'Manager' ||
-    userProfile?.role === 'Administrator' || userProfile?.role === 'Admin';
+    // Check both database enum values and legacy values for backward compatibility
+    return userProfile?.role === 'manager' ||
+           userProfile?.role === 'Management' ||
+           userProfile?.role === 'Manager' ||
+           userProfile?.role === 'admin' ||
+           userProfile?.role === 'Administrator' ||
+           userProfile?.role === 'Admin';
   };
 
   const value: AuthContextType = {
@@ -488,7 +627,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     hasPermission,
     isAdmin,
     isManager,
-    clearError
+    clearError,
+    checkRoleFromBothSources,
+    synchronizeRoles
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
