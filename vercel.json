@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://avmteiaswrkmyjifndab.supabase.co/:path*"
+      "destination": "https://nehhjsiuhthflfwkfequ.supabase.co"
     },
     {
       "source": "/(.*)",
@@ -48,7 +48,7 @@
   ],
   "env": {
         "NODE_ENV": "production",
-        "VITE_SUPABASE_URL": "https://avmteiaswrkmyjifndab.supabase.co",
-        "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bXRlaWFzd3JrbXlqaWZuZGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk3ODg4NDksImV4cCI6MjAzNTM2NDg0OX0.5993kG_0a7i_3iSYi5b_i2_3jC8UeQ4jY8y_kX8zZ2o"
+        "VITE_SUPABASE_URL": "https://nehhjsiuhthflfwkfequ.supabase.co",
+        "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5laGhqc2l1aHRoZmxmd2tmZXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwMTMxNzUsImV4cCI6MjA2ODU4OTE3NX0.osjykkMo-WoYdRdh6quNu2F8DQHi5dN32JwSiaT5eLc"
       }
 }
