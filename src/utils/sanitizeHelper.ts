@@ -125,6 +125,35 @@ export const isValidAttributeValue = (str: string): boolean => {
 };
 
 /**
+ * Safely checks if a value contains a substring (prevents TypeError: includes is not a function)
+ * @param value The value to check
+ * @param searchString The substring to search for
+ * @returns true if the value is a string/array and contains the searchString, false otherwise
+ */
+export const safeIncludes = (value: any, searchString: string): boolean => {
+  if (typeof value === 'string') {
+    return value.includes(searchString);
+  }
+  if (Array.isArray(value)) {
+    return value.includes(searchString);
+  }
+  return false;
+};
+
+/**
+ * Safely checks if a value contains a substring (case-insensitive)
+ * @param value The value to check
+ * @param searchString The substring to search for
+ * @returns true if the value is a string and contains the searchString (case-insensitive), false otherwise
+ */
+export const safeIncludesIgnoreCase = (value: any, searchString: string): boolean => {
+  if (typeof value === 'string') {
+    return value.toLowerCase().includes(searchString.toLowerCase());
+  }
+  return false;
+};
+
+/**
  * Comprehensive sanitization for any user input
  * @param input The input to sanitize
  * @returns A sanitized version of the input
@@ -161,5 +190,7 @@ export default {
   createSafeKey,
   removeBOM,
   isValidAttributeValue,
-  sanitizeUserInput
+  sanitizeUserInput,
+  safeIncludes,
+  safeIncludesIgnoreCase
 };
