@@ -80,7 +80,7 @@ export const useStationStore = () => {
       // Load stations and station options in parallel
       const [stations, stationOptions] = await Promise.all([
         stationService.getStations(),
-        stationService.getStationOptions(true, userProfile?.role, userProfile?.permissions)
+        stationService.getStationOptions(true, userProfile?.role, Array.isArray(userProfile?.permissions) ? userProfile.permissions : [])
       ]);
 
       updateStore({
@@ -233,7 +233,7 @@ export const useStationStore = () => {
     const canSelectAll = userProfile?.role === 'Administrator' ||
                         userProfile?.role === 'Management' ||
                         userProfile?.role === 'Manager' ||
-                        userProfile?.permissions?.includes('view_all_stations');
+                        (Array.isArray(userProfile?.permissions) && userProfile.permissions.includes('view_all_stations'));
 
     if (includeAll && canSelectAll) {
       // Ensure "All Stations" is at the top
@@ -279,12 +279,12 @@ export const useStationStore = () => {
 
     // Utility functions
     getStationColor: stationService.getStationColor.bind(stationService),
-    canSelectAll: () => {
-      return userProfile?.role === 'Administrator' ||
-             userProfile?.role === 'Management' ||
-             userProfile?.role === 'Manager' ||
-             userProfile?.permissions?.includes('view_all_stations') || false;
-    }
+  canSelectAll: () => {
+    return userProfile?.role === 'Administrator' ||
+           userProfile?.role === 'Management' ||
+           userProfile?.role === 'Manager' ||
+           (Array.isArray(userProfile?.permissions) && userProfile.permissions.includes('view_all_stations')) || false;
+  }
   };
 };
 
