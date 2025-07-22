@@ -86,10 +86,14 @@ export const useStationOptions = (includeAll: boolean = true) => {
     const userRole = userProfile?.role;
     const userPermissions = userProfile?.permissions;
 
+    if (!userRole || typeof userRole !== 'string') {
+      return false;
+    }
+
     return userRole === 'Administrator' ||
     userRole === 'Management' ||
     userRole === 'Manager' ||
-    userPermissions?.includes('view_all_stations') || false;
+    (Array.isArray(userPermissions) && userPermissions.includes('view_all_stations')) || false;
   }, [userProfile?.role, userProfile?.permissions]);
 
   const getUserAccessibleStations = useCallback(async (): Promise<string[]> => {

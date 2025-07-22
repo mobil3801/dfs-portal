@@ -147,12 +147,12 @@ class StationService {
    * Check if user can view all stations
    */
   private canUserViewAll(userRole?: string, userPermissions?: string[]): boolean {
-    if (!userRole) return false;
+    if (!userRole || typeof userRole !== 'string') return false;
 
     return userRole === 'Administrator' ||
     userRole === 'Management' ||
     userRole === 'Manager' ||
-    userPermissions?.includes('view_all_stations') || false;
+    (Array.isArray(userPermissions) && userPermissions.includes('view_all_stations')) || false;
   }
 
   /**
@@ -275,8 +275,8 @@ class StationService {
     for (const stationName of allStationNames) {
       const permissionKey = `view_${stationName.toLowerCase().replace(/\s+/g, '_')}`;
 
-      if (userPermissions?.includes(permissionKey) ||
-      userStationAccess?.includes(stationName)) {
+      if ((Array.isArray(userPermissions) && userPermissions.includes(permissionKey)) ||
+      (Array.isArray(userStationAccess) && userStationAccess.includes(stationName))) {
         accessibleStations.push(stationName);
       }
     }
