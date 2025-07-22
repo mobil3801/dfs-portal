@@ -36,7 +36,6 @@ import {
   RefreshCw,
   Database } from
 'lucide-react';
-import { useStationOptions } from '@/hooks/use-station-service';
 
 interface UserProfile {
   id: string; // UUID
@@ -78,7 +77,7 @@ const UserManagement: React.FC = () => {
   });
 
   const roles = ['admin', 'manager', 'employee'];
-  const { stationOptions } = useStationOptions(true); // includeAll = true
+  const [stations, setStations] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     user_id: 0,
@@ -115,7 +114,7 @@ const fetchStations = async () => {
         if (error) {
           throw new Error(error);
         }
-        // setStations(data?.List || []); // This state is no longer used for the dropdown
+        setStations(data?.List || []);
       } catch (error) {
         console.error('Error fetching stations:', error);
         toast({
@@ -387,15 +386,31 @@ const fetchStations = async () => {
   };
 
   const filteredProfiles = userProfiles.filter((profile) => {
-    // Helper function to safely convert to string and handle null/undefined values
+    // Enhanced helper function to safely convert to string and handle all edge cases
     const safeString = (value: any): string => {
-      if (value === null || value === undefined) return '';
+      if (value === null || value === undefined || value === '') return '';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number') return String(value);
+      if (typeof value === 'boolean') return String(value);
+      if (Array.isArray(value)) return value.join(', ');
+      if (typeof value === 'object') return JSON.stringify(value);
       return String(value);
     };
 
-    const matchesSearch =
-      safeString(profile.employee_id).toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-      safeString(profile.phone).toLowerCase().includes((searchTerm || '').toLowerCase());
+    // Safe toLowerCase function that handles undefined/null values
+    const safeToLowerCase = (value: any): string => {
+      const str = safeString(value);
+      return str ? str.toLowerCase() : '';
+    };
+
+    // Safe search term handling
+    const searchTermLower = searchTerm ? searchTerm.toLowerCase() : '';
+
+    const matchesSearch = !searchTermLower || (
+      safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
+      safeToLowerCase(profile.phone).includes(searchTermLower)
+    );
+    
     const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
     // Temporarily disable station filtering until it's properly implemented
     // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
@@ -415,11 +430,11 @@ const fetchStations = async () => {
 
   const getStationBadgeColor = (stationName: string | undefined | null) => {
     if (!stationName || typeof stationName !== 'string') return 'bg-gray-100 text-gray-800';
-    const station = stationOptions.find(s => s.value === stationName);
-    if (!station || !station.value) return 'bg-gray-100 text-gray-800';
+    const station = stations.find(s => s.name === stationName);
+    if (!station || !station.id) return 'bg-gray-100 text-gray-800';
 
     // Logic to return a color based on station name/id - can be expanded
-    const hash = String(station.value).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const hash = String(station.id).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
     const colors = [
       'bg-blue-100 text-blue-800',
       'bg-purple-100 text-purple-800',
@@ -604,14 +619,14 @@ const fetchStations = async () => {
                     </div>
                     <div>
                       <Label htmlFor="station">Station</Label>
-                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: value === 'ALL_STATIONS' ? stationOptions.filter(opt => opt.value !== 'ALL_STATIONS').map(opt => opt.value) : [value] })}>
+                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: [value] })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a station" />
                         </SelectTrigger>
                         <SelectContent>
-                          {stationOptions.map((station) => (
-                            <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
-                          ))}
+                          {stations.map((station) =>
+                          <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -751,9 +766,9 @@ const fetchStations = async () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Stations</SelectItem>
-                    {stationOptions.map((station) => (
-                      <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
-                    ))}
+                    {stations.map((station) =>
+                    <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 
@@ -960,9 +975,9 @@ const fetchStations = async () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {stationOptions.map((station) => (
-                          <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
-                        ))}
+                        {stations.map((station) =>
+                        <SelectItem key={station} value={station}>{station}</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1049,9 +1064,9 @@ const fetchStations = async () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Keep existing stations</SelectItem>
-                {stationOptions.map((station) => (
-                  <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
-                ))}
+                {stations.map((station) =>
+                <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
