@@ -23,7 +23,7 @@ import {
   Printer } from
 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import StationSelector from '@/components/StationSelector';
+import StationDropdown from '@/components/StationDropdown';
 import GasGrocerySalesSection from '@/components/SalesReportSections/GasGrocerySalesSection';
 import LotterySalesSection from '@/components/SalesReportSections/LotterySalesSection';
 import GasTankReportSection from '@/components/SalesReportSections/GasTankReportSection';
@@ -184,8 +184,7 @@ export default function SalesReportForm() {
         };
 
         // Parse expenses data if it exists
-        let expensesData = { total_expenses: 0, cash_expenses: 0 };
-        let groceryBreakdown = { groceryCashSales: 0, groceryCardSales: 0 };
+        let expensesData: { total_expenses: number; cash_expenses: number; grocery_breakdown?: { groceryCashSales: number; groceryCardSales: number } } = { total_expenses: 0, cash_expenses: 0 };
 
         if (report.expenses_data) {
           try {
@@ -600,7 +599,15 @@ export default function SalesReportForm() {
             </h1>
             <p className="text-gray-600 mt-2">Step 1: Select your station to begin</p>
           </div>
-          <StationSelector onStationSelect={setSelectedStation} />
+          <StationDropdown
+            id="station"
+            label="Station"
+            value={selectedStation}
+            onValueChange={setSelectedStation}
+            placeholder="Select a station"
+            required
+            includeAll={true}
+          />
         </div>
       </div>);
 
@@ -972,5 +979,4 @@ export default function SalesReportForm() {
 
       </div>
     </div>);
-
 }
