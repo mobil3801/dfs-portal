@@ -393,8 +393,8 @@ const fetchStations = async () => {
     };
 
     const matchesSearch =
-      safeString(profile.employee_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      safeString(profile.phone).toLowerCase().includes(searchTerm.toLowerCase());
+      safeString(profile.employee_id).toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      safeString(profile.phone).toLowerCase().includes((searchTerm || '').toLowerCase());
     const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
     // Temporarily disable station filtering until it's properly implemented
     // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
