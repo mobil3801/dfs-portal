@@ -9,11 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useBatchSelection } from '@/hooks/use-batch-selection';
+import { useStationStore } from '@/hooks/use-station-store';
 import BatchActionBar from '@/components/BatchActionBar';
 import BatchDeleteDialog from '@/components/BatchDeleteDialog';
 import BatchEditDialog from '@/components/BatchEditDialog';
-import StationEditDialog from '@/components/StationEditDialog';
-import StationFormDialog from '@/components/StationFormDialog';
+import EnhancedStationFormDialog from '@/components/EnhancedStationFormDialog';
+import UniversalStationDropdown from '@/components/UniversalStationDropdown';
 import AccessDenied from '@/components/AccessDenied';
 import useAdminAccess from '@/hooks/use-admin-access';
 import { stationService } from '@/services/stationService';
@@ -93,10 +94,18 @@ const SiteManagement: React.FC = () => {
     logRetentionDays: 30
   });
 
-  const [stations, setStations] = useState<Station[]>([]);
-  const [loadingStations, setLoadingStations] = useState(true);
+  // Enhanced station store integration for production
+  const { 
+    stations, 
+    loading: loadingStations, 
+    error: stationError, 
+    loadStations: reloadStations,
+    deleteStation: removeStation,
+    addStation,
+    updateStation
+  } = useStationStore();
+
   const [editingStation, setEditingStation] = useState<Station | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [stationFormDialogOpen, setStationFormDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [isBatchEditDialogOpen, setIsBatchEditDialogOpen] = useState(false);
@@ -117,49 +126,10 @@ const SiteManagement: React.FC = () => {
     operating_hours: ''
   });
 
-  // Load stations from centralized service
-  const loadStations = async () => {
-    try {
-      
-      const { data, error } = await window.ezsite.apis.tablePage(12599, {
-        PageNo: 1,
-        PageSize: 100,
-        OrderByField: 'station_name',
-        IsAsc: true,
-        Filters: []
-      });
-
-      if (error) throw error;
-
-      
-      setStations(data?.List || []);
-    } catch (error) {
-      console.error('Error loading stations:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load station information",
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingStations(false);
-    }
-  };
-
-  useEffect(() => {
-    loadStations();
-  }, []);
-
   const handleEditStation = (station: Station) => {
-    
     setEditingStation(station);
     setDialogMode('edit');
     setStationFormDialogOpen(true);
-  };
-
-  const handleStationSaved = () => {
-    // Clear the centralized station cache when stations are updated
-    stationService.clearCache();
-    loadStations();
   };
 
   const handleSaveSettings = async () => {
@@ -251,17 +221,20 @@ const SiteManagement: React.FC = () => {
     setBatchActionLoading(true);
     try {
       const selectedData = batchSelection.getSelectedData(stations, (station) => station.id);
-      const updates = selectedData.map((station) => ({
-        id: station.id,
-        ...(batchEditData.status && { status: batchEditData.status }),
-        ...(batchEditData.manager_name && { manager_name: batchEditData.manager_name }),
-        ...(batchEditData.operating_hours && { operating_hours: batchEditData.operating_hours }),
-        last_updated: new Date().toISOString()
-      }));
-
-      for (const update of updates) {
-        const { error } = await window.ezsite.apis.tableUpdate(12599, update);
-        if (error) throw error;
+      
+      // Use the enhanced store for batch updates
+      for (const station of selectedData) {
+        const updateData = {
+          ...station,
+          ...(batchEditData.status && { status: batchEditData.status }),
+          ...(batchEditData.manager_name && { manager_name: batchEditData.manager_name }),
+          ...(batchEditData.operating_hours && { operating_hours: batchEditData.operating_hours }),
+        };
+        
+        const result = await updateStation(updateData);
+        if (!result.success) {
+          throw new Error(result.error || `Failed to update ${station.station_name}`);
+        }
       }
 
       toast({
@@ -271,14 +244,11 @@ const SiteManagement: React.FC = () => {
 
       setIsBatchEditDialogOpen(false);
       batchSelection.clearSelection();
-      // Clear the centralized station cache when stations are updated
-      stationService.clearCache();
-      loadStations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in batch edit:', error);
       toast({
         title: "Error",
-        description: `Failed to update stations: ${error}`,
+        description: error.message || "Failed to update stations",
         variant: "destructive"
       });
     } finally {
@@ -290,10 +260,13 @@ const SiteManagement: React.FC = () => {
     setBatchActionLoading(true);
     try {
       const selectedData = batchSelection.getSelectedData(stations, (station) => station.id);
-
+      
+      // Use the enhanced store for batch deletion
       for (const station of selectedData) {
-        const { error } = await window.ezsite.apis.tableDelete(12599, { id: station.id });
-        if (error) throw error;
+        const result = await removeStation(station.id);
+        if (!result.success) {
+          throw new Error(result.error || `Failed to delete ${station.station_name}`);
+        }
       }
 
       toast({
@@ -303,22 +276,17 @@ const SiteManagement: React.FC = () => {
 
       setIsBatchDeleteDialogOpen(false);
       batchSelection.clearSelection();
-      // Clear the centralized station cache when stations are deleted
-      stationService.clearCache();
-      loadStations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in batch delete:', error);
       toast({
-        title: "Error",
-        description: `Failed to delete stations: ${error}`,
+        title: "Error", 
+        description: error.message || "Failed to delete stations",
         variant: "destructive"
       });
     } finally {
       setBatchActionLoading(false);
     }
-  };
-
-  // Check admin access first
+  };  // Check admin access first
   if (!isAdmin) {
     return (
       <AccessDenied
@@ -526,30 +494,16 @@ const SiteManagement: React.FC = () => {
                           <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
                           if (window.confirm(`Are you sure you want to delete "${station.station_name}"?`)) {
-                            (async () => {
-                              try {
-                                const { error } = await window.ezsite.apis.tableDelete(12599, { id: station.id });
-                                if (error) throw error;
-
-                                toast({
-                                  title: "Success",
-                                  description: "Station deleted successfully"
-                                });
-
-                                // Clear the centralized station cache when stations are deleted
-                                stationService.clearCache();
-                                loadStations();
-                              } catch (error) {
-                                console.error('Error deleting station:', error);
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to delete station",
-                                  variant: "destructive"
-                                });
-                              }
-                            })();
+                            const result = await removeStation(station.id.toString());
+                            if (!result.success) {
+                              toast({
+                                title: "Error",
+                                description: result.error || "Failed to delete station",
+                                variant: "destructive"
+                              });
+                            }
                           }
                         }}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
@@ -845,21 +799,27 @@ const SiteManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Station Form Dialog */}
-      <StationFormDialog
+      {/* Enhanced Station Form Dialog */}
+      <EnhancedStationFormDialog
         open={stationFormDialogOpen}
         onOpenChange={setStationFormDialogOpen}
         station={editingStation}
         onSave={handleStationSaved}
-        mode={dialogMode} />
+        mode={dialogMode}
+      />
 
 
-      {/* Station Edit Dialog */}
-      <StationEditDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+      {/* Enhanced Station Form Dialog */}
+      <EnhancedStationFormDialog
+        open={stationFormDialogOpen}
+        onOpenChange={setStationFormDialogOpen}
+        mode={dialogMode}
         station={editingStation}
-        onSave={handleStationSaved} />
+        onSuccess={(station) => {
+          setStationFormDialogOpen(false);
+          setEditingStation(null);
+        }}
+      />
 
       {/* Batch Edit Dialog */}
       <BatchEditDialog
@@ -875,6 +835,7 @@ const SiteManagement: React.FC = () => {
             <Label htmlFor="batch_status">Status</Label>
             <select
               id="batch_status"
+              title="Station Status"
               value={batchEditData.status}
               onChange={(e) => setBatchEditData({ ...batchEditData, status: e.target.value })}
               className="w-full p-2 border rounded-md">

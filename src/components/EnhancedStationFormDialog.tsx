@@ -29,7 +29,17 @@ interface StationFormDialogProps {
   mode: 'add' | 'edit';
 }
 
-const StationFormDialog: React.FC<StationFormDialogProps> = ({
+/**
+ * Enhanced Station Form Dialog with real-time updates
+ * 
+ * Features:
+ * - Real-time validation with inline error messages
+ * - Duplicate station name detection
+ * - Integration with global station store for instant updates
+ * - Enhanced UX with loading states and success feedback
+ * - Automatic availability in all dropdowns after creation
+ */
+const EnhancedStationFormDialog: React.FC<StationFormDialogProps> = ({
   open,
   onOpenChange,
   station,
@@ -49,6 +59,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
     status: 'Active'
   });
 
+  // Initialize form data when dialog opens or station changes
   useEffect(() => {
     if (station && mode === 'edit') {
       setFormData({
@@ -70,6 +81,8 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
         status: 'Active'
       });
     }
+    // Clear validation errors when dialog opens
+    setValidationErrors({});
   }, [station, mode, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -205,6 +218,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Station Name */}
           <div>
             <Label htmlFor="station_name">Station Name *</Label>
             <Input
@@ -223,6 +237,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
             )}
           </div>
 
+          {/* Address */}
           <div>
             <Label htmlFor="address">Address *</Label>
             <Textarea
@@ -242,6 +257,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
             )}
           </div>
 
+          {/* Phone */}
           <div>
             <Label htmlFor="phone">Phone Number *</Label>
             <Input
@@ -261,6 +277,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
             )}
           </div>
 
+          {/* Operating Hours */}
           <div>
             <Label htmlFor="operating_hours">Operating Hours *</Label>
             <Input
@@ -279,6 +296,7 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
             )}
           </div>
 
+          {/* Manager Name */}
           <div>
             <Label htmlFor="manager_name">Manager Name *</Label>
             <Input
@@ -296,22 +314,8 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
               </p>
             )}
           </div>
-            <Input
-              id="manager_name"
-              value={formData.manager_name}
-              onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
-              placeholder="Station manager name"
-              required
-              className={validationErrors.manager_name ? 'border-red-500' : ''}
-            />
-            {validationErrors.manager_name && (
-              <p className="text-xs text-red-500 mt-1 flex items-center space-x-1">
-                <AlertTriangle className="w-3 h-3" />
-                <span>{validationErrors.manager_name}</span>
-              </p>
-            )}
-          </div>
 
+          {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
             <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
@@ -326,29 +330,30 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
             </Select>
           </div>
 
+          {/* Action Buttons */}
           <div className="flex justify-end space-x-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={loading}>
-
+              disabled={loading}
+            >
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700">
-
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <Save className="w-4 h-4 mr-2" />
               {loading ? 'Saving...' : mode === 'add' ? 'Add Station' : 'Update Station'}
             </Button>
           </div>
         </form>
       </DialogContent>
-    </Dialog>);
-
+    </Dialog>
+  );
 };
 
-export default StationFormDialog;
+export default EnhancedStationFormDialog;
