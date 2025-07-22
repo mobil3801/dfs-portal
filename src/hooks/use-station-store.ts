@@ -238,13 +238,13 @@ export const useStationStore = () => {
     if (includeAll && canSelectAll) {
       // Ensure "All Stations" is at the top
       const allStationsOption: StationOption = {
-        value: 'ALL_STATIONS',
+        value: 'ALL',
         label: 'All Stations',
         color: 'bg-indigo-600'
       };
 
       // Remove any existing "All Stations" option and add it at the top
-      options = options.filter(opt => opt.value !== 'ALL_STATIONS' && opt.value !== 'ALL');
+      options = options.filter(opt => opt.value !== 'ALL');
       options.unshift(allStationsOption);
     }
 
