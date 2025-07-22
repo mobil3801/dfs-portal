@@ -36,6 +36,7 @@ import {
   RefreshCw,
   Database } from
 'lucide-react';
+import { useStationOptions } from '@/hooks/use-station-service';
 
 interface UserProfile {
   id: string; // UUID
@@ -77,7 +78,7 @@ const UserManagement: React.FC = () => {
   });
 
   const roles = ['admin', 'manager', 'employee'];
-  const [stations, setStations] = useState<any[]>([]);
+  const { stationOptions } = useStationOptions(true); // includeAll = true
 
   const [formData, setFormData] = useState({
     user_id: 0,
@@ -114,7 +115,7 @@ const fetchStations = async () => {
         if (error) {
           throw new Error(error);
         }
-        setStations(data?.List || []);
+        // setStations(data?.List || []); // This state is no longer used for the dropdown
       } catch (error) {
         console.error('Error fetching stations:', error);
         toast({
@@ -414,11 +415,11 @@ const fetchStations = async () => {
 
   const getStationBadgeColor = (stationName: string | undefined | null) => {
     if (!stationName || typeof stationName !== 'string') return 'bg-gray-100 text-gray-800';
-    const station = stations.find(s => s.name === stationName);
-    if (!station || !station.id) return 'bg-gray-100 text-gray-800';
+    const station = stationOptions.find(s => s.value === stationName);
+    if (!station || !station.value) return 'bg-gray-100 text-gray-800';
 
     // Logic to return a color based on station name/id - can be expanded
-    const hash = String(station.id).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const hash = String(station.value).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
     const colors = [
       'bg-blue-100 text-blue-800',
       'bg-purple-100 text-purple-800',
@@ -603,14 +604,14 @@ const fetchStations = async () => {
                     </div>
                     <div>
                       <Label htmlFor="station">Station</Label>
-                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: [value] })}>
+                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: value === 'ALL_STATIONS' ? stationOptions.filter(opt => opt.value !== 'ALL_STATIONS').map(opt => opt.value) : [value] })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a station" />
                         </SelectTrigger>
                         <SelectContent>
-                          {stations.map((station) =>
-                          <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
-                          )}
+                          {stationOptions.map((station) => (
+                            <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -750,9 +751,9 @@ const fetchStations = async () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Stations</SelectItem>
-                    {stations.map((station) =>
-                    <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
-                    )}
+                    {stationOptions.map((station) => (
+                      <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 
@@ -959,9 +960,9 @@ const fetchStations = async () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {stations.map((station) =>
-                        <SelectItem key={station} value={station}>{station}</SelectItem>
-                        )}
+                        {stationOptions.map((station) => (
+                          <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1048,9 +1049,9 @@ const fetchStations = async () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Keep existing stations</SelectItem>
-                {stations.map((station) =>
-                <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
-                )}
+                {stationOptions.map((station) => (
+                  <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
