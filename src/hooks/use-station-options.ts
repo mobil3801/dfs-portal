@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStationOptions as useStationOptionsFromService, useStationFilter as useStationFilterFromService } from '@/hooks/use-station-service';
+import { safeArrayIncludes } from '@/utils/safeIncludes';
 
 export interface StationOption {
   value: string;
@@ -44,13 +45,19 @@ export const useStationOptions = (includeAll: boolean = true) => {
 
     // Filter stations based on user's specific station permissions
     const accessibleStations = [];
-    if (userProfile?.permissions?.includes('view_mobil') || userProfile?.stationAccess?.includes('MOBIL')) {
+    const permissions = userProfile?.permissions;
+    const stationAccess = userProfile?.stationAccess;
+    
+    if ((Array.isArray(permissions) && permissions.includes('view_mobil')) || 
+        (Array.isArray(stationAccess) && stationAccess.includes('MOBIL'))) {
       accessibleStations.push('MOBIL');
     }
-    if (userProfile?.permissions?.includes('view_amoco_rosedale') || userProfile?.stationAccess?.includes('AMOCO ROSEDALE')) {
+    if ((Array.isArray(permissions) && permissions.includes('view_amoco_rosedale')) || 
+        (Array.isArray(stationAccess) && stationAccess.includes('AMOCO ROSEDALE'))) {
       accessibleStations.push('AMOCO ROSEDALE');
     }
-    if (userProfile?.permissions?.includes('view_amoco_brooklyn') || userProfile?.stationAccess?.includes('AMOCO BROOKLYN')) {
+    if ((Array.isArray(permissions) && permissions.includes('view_amoco_brooklyn')) || 
+        (Array.isArray(stationAccess) && stationAccess.includes('AMOCO BROOKLYN'))) {
       accessibleStations.push('AMOCO BROOKLYN');
     }
 
