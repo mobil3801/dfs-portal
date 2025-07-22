@@ -386,9 +386,15 @@ const fetchStations = async () => {
   };
 
   const filteredProfiles = userProfiles.filter((profile) => {
+    // Helper function to safely convert to string and handle null/undefined values
+    const safeString = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      return String(value);
+    };
+
     const matchesSearch =
-    (profile.employee_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (profile.phone || '').toLowerCase().includes(searchTerm.toLowerCase());
+      safeString(profile.employee_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      safeString(profile.phone).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
     // Temporarily disable station filtering until it's properly implemented
     // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
@@ -406,13 +412,13 @@ const fetchStations = async () => {
     }
   };
 
-  const getStationBadgeColor = (stationName: string) => {
-    if (!stationName) return 'bg-gray-100 text-gray-800';
+  const getStationBadgeColor = (stationName: string | undefined | null) => {
+    if (!stationName || typeof stationName !== 'string') return 'bg-gray-100 text-gray-800';
     const station = stations.find(s => s.name === stationName);
-    if (!station) return 'bg-gray-100 text-gray-800';
+    if (!station || !station.id) return 'bg-gray-100 text-gray-800';
 
     // Logic to return a color based on station name/id - can be expanded
-    const hash = station.id.split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const hash = String(station.id).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
     const colors = [
       'bg-blue-100 text-blue-800',
       'bg-purple-100 text-purple-800',
@@ -856,7 +862,9 @@ const fetchStations = async () => {
                           </TableCell>
                           <TableCell>
                             <Badge className={getStationBadgeColor(profile.station_access?.[0])}>
-                              {profile.station_access?.join(', ') || 'N/A'}
+                              {Array.isArray(profile.station_access) && profile.station_access.length > 0 
+                                ? profile.station_access.join(', ') 
+                                : 'N/A'}
                             </Badge>
                           </TableCell>
                           <TableCell>{profile.phone}</TableCell>
