@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { ErrorLogger } from '@/services/errorLogger';
 import ErrorFallback from './ErrorFallback';
+import { safeErrorIncludes, safeErrorStackIncludes } from '@/utils/stringHelpers';
 
 interface Props {
   children: ReactNode;
@@ -48,7 +49,7 @@ class EnhancedGlobalErrorBoundary extends Component<Props, State> {
       const message = args.join(' ');
 
       // Check for React invariant violations
-      if (message.includes('Invariant') || message.includes('invariant')) {
+      if (message && typeof message === 'string' && (message.includes('Invariant') || message.includes('invariant'))) {
         this.handleInvariantError(new Error(message), args);
       }
 
@@ -114,9 +115,9 @@ class EnhancedGlobalErrorBoundary extends Component<Props, State> {
     const errorId = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Check if this is a React invariant error
-    const isInvariant = error.message?.includes('Invariant') ||
-    error.message?.includes('invariant') ||
-    error.stack?.includes('invariant');
+    const isInvariant = safeErrorIncludes(error, 'Invariant') ||
+    safeErrorIncludes(error, 'invariant') ||
+    safeErrorStackIncludes(error, 'invariant');
 
     console.error('Error boundary caught error:', {
       message: error.message,
@@ -134,9 +135,9 @@ class EnhancedGlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const isInvariant = error.message?.includes('Invariant') ||
-    error.message?.includes('invariant') ||
-    error.stack?.includes('invariant');
+    const isInvariant = safeErrorIncludes(error, 'Invariant') ||
+    safeErrorIncludes(error, 'invariant') ||
+    safeErrorStackIncludes(error, 'invariant');
 
     const severity = isInvariant ? 'critical' : 'high';
 
@@ -237,9 +238,9 @@ class EnhancedGlobalErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError && this.state.error) {
-      const isInvariant = this.state.error.message?.includes('Invariant') ||
-      this.state.error.message?.includes('invariant') ||
-      this.state.error.stack?.includes('invariant');
+      const isInvariant = safeErrorIncludes(this.state.error, 'Invariant') ||
+      safeErrorIncludes(this.state.error, 'invariant') ||
+      safeErrorStackIncludes(this.state.error, 'invariant');
 
       // Custom fallback component
       if (this.props.fallback) {

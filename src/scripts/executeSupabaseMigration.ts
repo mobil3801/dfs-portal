@@ -7,6 +7,7 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
+import { safeErrorIncludes } from '../utils/stringHelpers';
 
 // Environment variables
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nehhjsiuhthflfwkfequ.supabase.co';
@@ -50,7 +51,7 @@ class SupabaseMigrationExecutor {
       
       if (error) {
         // If exec_sql doesn't exist, try direct SQL execution
-        if (error.message?.includes('function exec_sql')) {
+        if (safeErrorIncludes(error, 'function exec_sql')) {
           // Split SQL into individual statements
           const statements = sql
             .split(';')
