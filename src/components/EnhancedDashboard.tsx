@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import SetupGuidance from '@/components/SetupGuidance';
 import QuickStartGuide from '@/components/QuickStartGuide';
+import { safeDateIncludes } from '@/utils/stringHelpers';
 
 interface DashboardWidget {
   id: string;
@@ -106,7 +107,7 @@ const EnhancedDashboard: React.FC = () => {
         // Today's sales
         const today = new Date().toISOString().split('T')[0];
         const todayReports = salesData.data.List.filter((report: any) =>
-        report.report_date?.includes(today)
+        safeDateIncludes(report.report_date, today)
         );
         todaySales = todayReports.reduce((sum: number, report: any) => {
           return sum + (report.total_sales || 0);
@@ -273,7 +274,7 @@ const EnhancedDashboard: React.FC = () => {
       // Count reports from today that might need review
       const today = new Date().toISOString().split('T')[0];
       const todayReports = data?.List?.filter((report: any) =>
-      report.report_date?.includes(today)
+      safeDateIncludes(report.report_date, today)
       ) || [];
 
       return Math.max(0, 3 - todayReports.length); // Mock pending tasks
