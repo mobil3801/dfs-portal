@@ -134,5 +134,14 @@
     "livePreview.tasks.runTaskWithExternalPreview": true,
     "workbench.experimental.cloudChanges.partialMatches.enabled": true,
     "typescript.disableAutomaticTypeAcquisition": true,
-    "redhat.telemetry.enabled": true
+    "redhat.telemetry.enabled": true,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./src",
+        "-p",
+        "*test*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true
 }
