@@ -78,9 +78,24 @@ export const useStationStore = () => {
 
     try {
       // Load stations and station options in parallel
+      const permissionsArray = (() => {
+        if (!userProfile?.detailed_permissions) return [];
+        if (typeof userProfile.detailed_permissions === 'string') {
+          try {
+            const parsed = JSON.parse(userProfile.detailed_permissions);
+            if (Array.isArray(parsed)) return parsed;
+            return [];
+          } catch {
+            return [];
+          }
+        }
+        if (Array.isArray(userProfile.detailed_permissions)) return userProfile.detailed_permissions;
+        return [];
+      })();
+
       const [stations, stationOptions] = await Promise.all([
         stationService.getStations(),
-        stationService.getStationOptions(true, userProfile?.role, Array.isArray(userProfile?.permissions) ? userProfile.permissions : [])
+        stationService.getStationOptions(true, userProfile?.role, permissionsArray)
       ]);
 
       updateStore({
@@ -104,7 +119,7 @@ export const useStationStore = () => {
         variant: 'destructive'
       });
     }
-  }, [userProfile?.role, userProfile?.permissions, toast, localStore.loading, localStore.lastUpdated, localStore.stations.length]);
+  }, [userProfile?.role, userProfile?.detailed_permissions, toast, localStore.loading, localStore.lastUpdated, localStore.stations.length]);
 
   /**
    * Add a new station and refresh the global store
@@ -116,8 +131,8 @@ export const useStationStore = () => {
 
       // Check for duplicate station name
       const existingStation = localStore.stations.find(
-        s => s.name.toLowerCase() === stationData.name.toLowerCase() ||
-             s.station_name?.toLowerCase() === stationData.name.toLowerCase()
+        s => (s.name?.toLowerCase() ?? '') === (stationData.name?.toLowerCase() ?? '') ||
+             (s.station_name?.toLowerCase() ?? '') === (stationData.name?.toLowerCase() ?? '')
       );
 
       if (existingStation) {
@@ -230,10 +245,25 @@ export const useStationStore = () => {
     let options = [...localStore.stationOptions];
 
     // Always include "All Stations" option if user has permission and includeAll is true
+    const permissionsArray = (() => {
+      if (!userProfile?.detailed_permissions) return [];
+      if (typeof userProfile.detailed_permissions === 'string') {
+        try {
+          const parsed = JSON.parse(userProfile.detailed_permissions);
+          if (Array.isArray(parsed)) return parsed;
+          return [];
+        } catch {
+          return [];
+        }
+      }
+      if (Array.isArray(userProfile.detailed_permissions)) return userProfile.detailed_permissions;
+      return [];
+    })();
+
     const canSelectAll = userProfile?.role === 'Administrator' ||
                         userProfile?.role === 'Management' ||
                         userProfile?.role === 'Manager' ||
-                        (Array.isArray(userProfile?.permissions) && userProfile.permissions.includes('view_all_stations'));
+                        permissionsArray.includes('view_all_stations');
 
     if (includeAll && canSelectAll) {
       // Ensure "All Stations" is at the top
@@ -249,7 +279,7 @@ export const useStationStore = () => {
     }
 
     return options;
-  }, [localStore.stationOptions, userProfile?.role, userProfile?.permissions]);
+  }, [localStore.stationOptions, userProfile?.role, userProfile?.detailed_permissions]);
 
   /**
    * Initialize store if not already loaded
@@ -280,10 +310,25 @@ export const useStationStore = () => {
     // Utility functions
     getStationColor: stationService.getStationColor.bind(stationService),
   canSelectAll: () => {
+    const permissionsArray = (() => {
+      if (!userProfile?.detailed_permissions) return [];
+      if (typeof userProfile.detailed_permissions === 'string') {
+        try {
+          const parsed = JSON.parse(userProfile.detailed_permissions);
+          if (Array.isArray(parsed)) return parsed;
+          return [];
+        } catch {
+          return [];
+        }
+      }
+      if (Array.isArray(userProfile.detailed_permissions)) return userProfile.detailed_permissions;
+      return [];
+    })();
+
     return userProfile?.role === 'Administrator' ||
            userProfile?.role === 'Management' ||
            userProfile?.role === 'Manager' ||
-           (Array.isArray(userProfile?.permissions) && userProfile.permissions.includes('view_all_stations')) || false;
+           permissionsArray.includes('view_all_stations') || false;
   }
   };
 };
