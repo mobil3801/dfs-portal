@@ -105,7 +105,54 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
         throw new Error(response.error);
       }
 
-      const moduleData = response.data.List || [];
+      let moduleData = response.data.List || [];
+
+      // Handle both old and new schema formats for backward compatibility
+      moduleData = moduleData.map((module: any) => {
+        // If using new schema with separate columns
+        if ('create_enabled' in module) {
+          return {
+            id: module.id,
+            module_name: module.module_name,
+            display_name: module.display_name || module.module_name,
+            create_enabled: module.create_enabled,
+            edit_enabled: module.edit_enabled,
+            delete_enabled: module.delete_enabled,
+            created_at: module.created_at,
+            updated_at: module.updated_at
+          };
+        }
+        
+        // If using old schema with permissions JSON
+        if ('permissions' in module && module.permissions) {
+          const permissions = typeof module.permissions === 'string' 
+            ? JSON.parse(module.permissions) 
+            : module.permissions;
+          
+          return {
+            id: module.id,
+            module_name: module.module_name,
+            display_name: module.display_name || module.module_name,
+            create_enabled: permissions.create_enabled ?? true,
+            edit_enabled: permissions.edit_enabled ?? true,
+            delete_enabled: permissions.delete_enabled ?? true,
+            created_at: module.created_at,
+            updated_at: module.updated_at
+          };
+        }
+
+        // Fallback to defaults
+        return {
+          id: module.id,
+          module_name: module.module_name,
+          display_name: module.display_name || module.module_name,
+          create_enabled: true,
+          edit_enabled: true,
+          delete_enabled: true,
+          created_at: module.created_at,
+          updated_at: module.updated_at
+        };
+      });
 
       // If no modules exist, create default ones
       if (moduleData.length === 0) {
