@@ -131,8 +131,8 @@ export const useStationStore = () => {
 
       // Check for duplicate station name
       const existingStation = localStore.stations.find(
-        s => (s.name?.toLowerCase() ?? '') === (stationData.name?.toLowerCase() ?? '') ||
-             (s.station_name?.toLowerCase() ?? '') === (stationData.name?.toLowerCase() ?? '')
+        s => (s.station_name?.toLowerCase() ?? '') === (stationData.station_name?.toLowerCase() ?? '') ||
+             (s.station_name?.toLowerCase() ?? '') === (stationData.station_name?.toLowerCase() ?? '')
       );
 
       if (existingStation) {
@@ -206,7 +206,7 @@ export const useStationStore = () => {
   /**
    * Delete station and refresh global store
    */
-  const deleteStation = useCallback(async (stationId: string) => {
+  const deleteStation = useCallback(async (stationId: number) => {
     try {
       updateStore({ loading: true, error: null });
 
