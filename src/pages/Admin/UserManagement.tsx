@@ -73,6 +73,7 @@ const UserManagement: React.FC = () => {
   const [batchEditData, setBatchEditData] = useState({
     role: '',
     station: '',
+    station_access: [] as string[],
     is_active: true
   });
 
@@ -80,9 +81,10 @@ const UserManagement: React.FC = () => {
   const [stations, setStations] = useState<any[]>([]);
 
   interface FormData {
-    user_id: number;
+    user_id: string; // Changed to string to match UserProfile
     role: string;
     station_access: string[];
+    station: string; // Added missing station property
     employee_id: string;
     phone: string;
     hire_date: string;
@@ -90,9 +92,10 @@ const UserManagement: React.FC = () => {
   }
 
   const [formData, setFormData] = useState<FormData>({
-    user_id: 0,
+    user_id: '',
     role: 'employee',
     station_access: [],
+    station: '',
     employee_id: '',
     phone: '',
     hire_date: '',
@@ -102,7 +105,7 @@ const UserManagement: React.FC = () => {
   // Generate random user ID
   const generateRandomUserId = () => {
     const randomId = Math.floor(Math.random() * 1000000) + 100000; // 6-digit random number
-    return randomId;
+    return randomId.toString(); // Return as string to match FormData type
   };
 
   useEffect(() => {
@@ -206,7 +209,8 @@ const fetchStations = async () => {
       setFormData({
         user_id: generateRandomUserId(),
         role: 'employee',
-        station: 'MOBIL',
+        station_access: [],
+        station: '',
         employee_id: '',
         phone: '',
         hire_date: '',
@@ -238,7 +242,7 @@ const fetchStations = async () => {
     try {
       
       const { error } = await window.ezsite.apis.tableUpdate(11725, {
-        id: selectedUserProfile.id,
+        id: parseInt(selectedUserProfile.id, 10), // Convert to number for API
         ...formData
       });
       if (error) throw error;
@@ -261,12 +265,17 @@ const fetchStations = async () => {
     }
   };
 
-  const handleDeleteProfile = async (profileId: number) => {
+  const handleDeleteProfile = async (profileId: string) => {
     if (!confirm('Are you sure you want to delete this user profile? This action cannot be undone.')) return;
 
     try {
+      // Convert string ID to number for API call
+      const numericId = parseInt(profileId, 10);
+      if (isNaN(numericId)) {
+        throw new Error('Invalid profile ID');
+      }
       
-      const { error } = await window.ezsite.apis.tableDelete(11725, { id: profileId });
+      const { error } = await window.ezsite.apis.tableDelete(11725, { id: numericId });
       if (error) throw error;
 
       toast({
@@ -284,6 +293,84 @@ const fetchStations = async () => {
       });
     }
   };
+
+  const handleEditProfile = (profile: UserProfile) => {
+    setSelectedUserProfile(profile);
+    setFormData({
+      user_id: profile.user_id,
+      role: profile.role,
+      station_access: profile.station_access || [],
+      station: profile.station_access?.[0] || '', // Use first station as selected station
+      employee_id: profile.employee_id,
+      phone: profile.phone,
+      hire_date: profile.hire_date || '',
+      is_active: profile.is_active
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const filteredProfiles = userProfiles.filter((profile) => {
+    // Enhanced helper function to safely convert to string and handle all edge cases
+    const safeString = (value: any): string => {
+      // Handle null, undefined, and empty values
+      if (value === null || value === undefined) return '';
+      if (value === '') return '';
+      
+      // Handle different data types
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number') return String(value);
+      if (typeof value === 'boolean') return String(value);
+      if (Array.isArray(value)) {
+        // Handle arrays by joining non-null/undefined elements
+        return value.filter(item => item !== null && item !== undefined).join(', ');
+      }
+      if (typeof value === 'object') {
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return '';
+        }
+      }
+      
+      // Fallback for any other type
+      try {
+        return String(value);
+      } catch {
+        return '';
+      }
+    };
+
+    // Safe toLowerCase function that handles undefined/null values with additional protection
+    const safeToLowerCase = (value: any): string => {
+      try {
+        const str = safeString(value);
+        return str && typeof str === 'string' ? str.toLowerCase() : '';
+      } catch {
+        return '';
+      }
+    };
+
+    // Safe search term handling with null check
+    const searchTermLower = searchTerm && typeof searchTerm === 'string' ? searchTerm.toLowerCase() : '';
+
+    // Enhanced search matching with additional safety checks
+    const matchesSearch = !searchTermLower || (
+      (profile?.employee_id && safeToLowerCase(profile.employee_id).includes(searchTermLower)) ||
+      (profile?.phone && safeToLowerCase(profile.phone).includes(searchTermLower))
+    );
+    
+    // Safe role matching with null checks
+    const matchesRole = selectedRole === 'All' || (profile?.role && profile.role === selectedRole);
+    
+    // Safe station matching with proper array handling
+    const matchesStation = selectedStation === 'All' || (
+      profile?.station_access && 
+      Array.isArray(profile.station_access) && 
+      profile.station_access.includes(selectedStation)
+    );
+
+    return matchesSearch && matchesRole && matchesStation;
+  });
 
   // Batch operations with real database operations
   const handleBatchEdit = () => {
@@ -317,11 +404,10 @@ const fetchStations = async () => {
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
       
-
       const updates = selectedData.map((profile) => ({
-        id: profile.id,
+        id: parseInt(profile.id, 10), // Convert to number for API
         ...(batchEditData.role && { role: batchEditData.role }),
-        ...(batchEditData.station_access && { station_access: batchEditData.station_access }),
+        ...(batchEditData.station_access.length > 0 && { station_access: batchEditData.station_access }),
         is_active: batchEditData.is_active
       }));
 
@@ -355,9 +441,14 @@ const fetchStations = async () => {
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
       
-
       for (const profile of selectedData) {
-        const { error } = await window.ezsite.apis.tableDelete(11725, { id: profile.id });
+        // Convert string ID to number for API call
+        const numericId = parseInt(profile.id, 10);
+        if (isNaN(numericId)) {
+          throw new Error(`Invalid profile ID: ${profile.id}`);
+        }
+        
+        const { error } = await window.ezsite.apis.tableDelete(11725, { id: numericId });
         if (error) throw error;
       }
 
@@ -380,54 +471,6 @@ const fetchStations = async () => {
       setBatchActionLoading(false);
     }
   };
-
-  const handleEditProfile = (profile: UserProfile) => {
-    setSelectedUserProfile(profile);
-    setFormData({
-      user_id: profile.user_id,
-      role: profile.role,
-      station_access: profile.station_access || [],
-      employee_id: profile.employee_id,
-      phone: profile.phone,
-      hire_date: profile.hire_date || '',
-      is_active: profile.is_active
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const filteredProfiles = userProfiles.filter((profile) => {
-    // Enhanced helper function to safely convert to string and handle all edge cases
-    const safeString = (value: any): string => {
-      if (value === null || value === undefined || value === '') return '';
-      if (typeof value === 'string') return value;
-      if (typeof value === 'number') return String(value);
-      if (typeof value === 'boolean') return String(value);
-      if (Array.isArray(value)) return value.join(', ');
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
-    };
-
-    // Safe toLowerCase function that handles undefined/null values
-    const safeToLowerCase = (value: any): string => {
-      const str = safeString(value);
-      return str ? str.toLowerCase() : '';
-    };
-
-    // Safe search term handling
-    const searchTermLower = searchTerm ? searchTerm.toLowerCase() : '';
-
-    const matchesSearch = !searchTermLower || (
-      safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
-      safeToLowerCase(profile.phone).includes(searchTermLower)
-    );
-    
-    const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
-    // Temporarily disable station filtering until it's properly implemented
-    // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
-    const matchesStation = true;
-
-    return matchesSearch && matchesRole && matchesStation;
-  });
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -586,7 +629,7 @@ const fetchStations = async () => {
                       <div className="relative">
                         <Input
                           id="user_id"
-                          type="number"
+                          type="text"
                           value={formData.user_id}
                           readOnly
                           disabled
@@ -629,7 +672,7 @@ const fetchStations = async () => {
                     </div>
                     <div>
                       <Label htmlFor="station">Station</Label>
-                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: [value] })}>
+                      <Select onValueChange={(value) => setFormData({ ...formData, station_access: [value], station: value })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a station" />
                         </SelectTrigger>
@@ -909,7 +952,7 @@ const fetchStations = async () => {
                                 <Edit3 className="w-4 h-4" />
                               </Button>
                               <SimpleRoleAssignment
-                            selectedUserId={profile.id}
+                            selectedUserId={parseInt(profile.id, 10)}
                             trigger={
                             <Button
                               size="sm"
@@ -928,7 +971,7 @@ const fetchStations = async () => {
                             }} />
 
                               <ComprehensivePermissionDialog
-                            selectedUserId={profile.id}
+                            selectedUserId={parseInt(profile.id, 10)}
                             trigger={
                             <Button
                               size="sm"
@@ -980,13 +1023,13 @@ const fetchStations = async () => {
                   </div>
                   <div>
                     <Label htmlFor="edit_station">Station</Label>
-                    <Select value={formData.station} onValueChange={(value) => setFormData({ ...formData, station: value })}>
+                    <Select value={formData.station} onValueChange={(value) => setFormData({ ...formData, station: value, station_access: [value] })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {stations.map((station) =>
-                        <SelectItem key={station} value={station}>{station}</SelectItem>
+                        <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -1068,7 +1111,7 @@ const fetchStations = async () => {
           </div>
           <div>
             <Label htmlFor="batch_station">Station</Label>
-            <Select onValueChange={(value) => setBatchEditData({ ...batchEditData, station_access: [value] })}>
+            <Select onValueChange={(value) => setBatchEditData({ ...batchEditData, station_access: value ? [value] : [], station: value || '' })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select station to update" />
               </SelectTrigger>
