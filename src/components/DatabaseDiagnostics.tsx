@@ -509,25 +509,53 @@ const DatabaseDiagnostics: React.FC = () => {
         permissions.errors.push(`Read permission error: ${readError.message}`);
       }
 
-      // Test write permissions (try to insert into a test table or check RLS policies)
+      // Test write permissions (try to insert, update, and delete in a test table)
       try {
-        const { error: writeError } = await supabase
+        // Insert test
+        const insertResponse = await supabase
           .from('products') // Assuming this table exists
-          .select('id')
-          .limit(1);
-        
-        if (!writeError) {
+          .insert([{ name: 'test_permission_check', description: 'test' }])
+          .select();
+
+        if (insertResponse.error) {
+          permissions.errors.push(`Insert permission error: ${insertResponse.error.message}`);
+        } else {
           permissions.canWrite = true;
+
+          // Update test
+          const insertedId = insertResponse.data?.[0]?.id;
+          if (insertedId) {
+            const updateResponse = await supabase
+              .from('products')
+              .update({ description: 'updated_test' })
+              .eq('id', insertedId);
+
+            if (updateResponse.error) {
+              permissions.errors.push(`Update permission error: ${updateResponse.error.message}`);
+            }
+
+            // Delete test
+            const deleteResponse = await supabase
+              .from('products')
+              .delete()
+              .eq('id', insertedId);
+
+            if (deleteResponse.error) {
+              permissions.errors.push(`Delete permission error: ${deleteResponse.error.message}`);
+            }
+          } else {
+            permissions.errors.push('Could not retrieve inserted record ID for update/delete tests');
+          }
         }
-      } catch {
-        permissions.errors.push('Write permission check skipped - table may not exist');
+      } catch (writeError) {
+        permissions.errors.push(`Write permission check failed: ${writeError.message}`);
       }
 
       return {
-        passed: permissions.canRead,
+        passed: permissions.canRead && permissions.canWrite,
         duration: Date.now() - startTime,
         details: `Read: ${permissions.canRead ? 'Yes' : 'No'}, Write: ${permissions.canWrite ? 'Yes' : 'No'}. Errors: ${permissions.errors.length}`,
-        recommendations: permissions.canRead ? 
+        recommendations: permissions.canRead && permissions.canWrite ? 
           ['Database permissions are functional'] :
           [
             'Check RLS policies on tables',
