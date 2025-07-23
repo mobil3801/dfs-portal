@@ -79,10 +79,20 @@ const UserManagement: React.FC = () => {
   const roles = ['admin', 'manager', 'employee'];
   const [stations, setStations] = useState<any[]>([]);
 
-  const [formData, setFormData] = useState({
+  interface FormData {
+    user_id: number;
+    role: string;
+    station_access: string[];
+    employee_id: string;
+    phone: string;
+    hire_date: string;
+    is_active: boolean;
+  }
+
+  const [formData, setFormData] = useState<FormData>({
     user_id: 0,
     role: 'employee',
-    station: 'MOBIL',
+    station_access: [],
     employee_id: '',
     phone: '',
     hire_date: '',
@@ -430,7 +440,7 @@ const fetchStations = async () => {
 
   const getStationBadgeColor = (stationName: string | undefined | null) => {
     if (!stationName || typeof stationName !== 'string') return 'bg-gray-100 text-gray-800';
-    const station = stations.find(s => s.name === stationName);
+    const station = stations.find(s => s?.name === stationName);
     if (!station || !station.id) return 'bg-gray-100 text-gray-800';
 
     // Logic to return a color based on station name/id - can be expanded
