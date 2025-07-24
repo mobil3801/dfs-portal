@@ -64,7 +64,7 @@ const ProductChangelogDialog: React.FC<ProductChangelogDialogProps> = ({
       setChanges(changelogEntries);
 
       // Fetch user names for all users who made changes
-      const userIds = [...new Set(changelogEntries.map((change: ChangelogEntry) => change.changed_by))];
+      const userIds = [...new Set(changelogEntries.map((change: ChangelogEntry) => change.changed_by).filter(id => typeof id === 'number'))];
       await fetchUserNames(userIds);
 
     } catch (error) {

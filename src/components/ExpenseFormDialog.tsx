@@ -22,7 +22,7 @@ interface ExpenseFormData {
   amount: number;
   paymentType: 'Cash' | 'Credit Card' | 'Cheque';
   chequeNumber: string;
-  invoiceFileId?: number;
+  invoiceFileId?: string | number;
   invoiceFileName?: string;
 }
 
@@ -162,7 +162,7 @@ const ExpenseFormDialog: React.FC<ExpenseFormDialogProps> = ({
         ...prev,
         invoiceFileId: fileId,
         invoiceFileName: file.name
-      }));
+      } as ExpenseFormData));
 
       toast({
         title: 'Success',

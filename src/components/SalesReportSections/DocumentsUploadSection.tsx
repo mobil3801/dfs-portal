@@ -17,12 +17,12 @@ interface DocumentUpload {
 
 interface DocumentsUploadSectionProps {
   documents: {
-    dayReportFileId?: number;
-    veederRootFileId?: number;
-    lottoReportFileId?: number;
-    scratchOffReportFileId?: number;
+    dayReportFileId?: number | string;
+    veederRootFileId?: number | string;
+    lottoReportFileId?: number | string;
+    scratchOffReportFileId?: number | string;
   };
-  onChange: (field: string, fileId: number) => void;
+  onChange: (field: string, fileId: number | string) => void;
 }
 
 const DocumentsUploadSection: React.FC<DocumentsUploadSectionProps> = ({
@@ -60,13 +60,13 @@ const DocumentsUploadSection: React.FC<DocumentsUploadSectionProps> = ({
 
   const uploadDocument = async (field: string, file: File) => {
     try {
-      const { data: fileId, error } = await window.ezsite.apis.upload({
+      const uploadResult = await window.ezsite.apis.upload({
         filename: file.name,
         file: file
       });
 
-      if (error) throw error;
-      onChange(field, fileId);
+      if (uploadResult.error) throw uploadResult.error;
+      onChange(field, uploadResult.data);
 
       toast({
         title: 'Success',
