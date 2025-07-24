@@ -416,17 +416,20 @@ const fetchStations = async () => {
     // Safe search term handling
     const searchTermLower = searchTerm ? searchTerm.toLowerCase() : '';
 
+    // Add null checks for profile object itself
+    if (!profile) return false;
+
     const matchesSearch = !searchTermLower || (
-      safeToLowerCase(profile?.employee_id).includes(searchTermLower) ||
-      safeToLowerCase(profile?.phone).includes(searchTermLower) ||
-      safeToLowerCase(profile?.role).includes(searchTermLower)
+      safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
+      safeToLowerCase(profile.phone).includes(searchTermLower) ||
+      safeToLowerCase(profile.role).includes(searchTermLower)
     );
     
-    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile?.role) === safeToLowerCase(selectedRole);
+    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile.role) === safeToLowerCase(selectedRole);
     
     // Safe station filtering with null checks
     const matchesStation = selectedStation === 'All' || 
-      (Array.isArray(profile?.station_access) && profile.station_access.some(station => 
+      (Array.isArray(profile.station_access) && profile.station_access.some(station => 
         safeToLowerCase(station).includes(safeToLowerCase(selectedStation))
       ));
 
@@ -678,12 +681,10 @@ const fetchStations = async () => {
 
                     </div>
                     <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id="is_active"
                         checked={formData.is_active}
-                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
-
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })} />
                       <Label htmlFor="is_active">Active User</Label>
                     </div>
                     <Button onClick={handleCreateProfile} className="w-full">
