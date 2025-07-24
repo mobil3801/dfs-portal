@@ -11,6 +11,15 @@ interface User {
   Name: string;
   Email: string;
   CreateTime: string;
+  user_metadata?: {
+    role?: string;
+    name?: string;
+    [key: string]: any;
+  };
+  app_metadata?: {
+    role?: string;
+    [key: string]: any;
+  };
 }
 
 interface UserProfile {
@@ -24,6 +33,8 @@ interface UserProfile {
   is_active: boolean;
   detailed_permissions: any;
   profile_image_id?: string | null; // Changed to UUID string
+  permissions?: string[] | any; // Added for station access control
+  stationAccess?: string[]; // Added for station access control
 }
 
 interface AuthContextType {

@@ -51,7 +51,6 @@ const StationDropdown: React.FC<StationDropdownProps> = ({
         </Label>
       )}
       <Select
-        id={id}
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
