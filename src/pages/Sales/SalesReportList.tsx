@@ -70,6 +70,8 @@ const SalesReportList: React.FC = () => {
   const canEditSales = canEdit('sales') && isAdmin(); // Restrict edit to admin only
   const canDeleteSales = canDelete('sales') && isAdmin(); // Restrict delete to admin only
 
+  console.log('Permission states:', { canCreateSales, canEditSales, canDeleteSales, isAdmin: isAdmin() });
+
   const pageSize = 10;
 
   // Use station filter hook to handle ALL vs specific station filtering
@@ -81,6 +83,7 @@ const SalesReportList: React.FC = () => {
 
   const loadReports = async () => {
     try {
+      console.log('Loading sales reports with:', { currentPage, searchTerm, selectedStation, stationFilters });
       setLoading(true);
       const filters = [];
 
@@ -102,7 +105,12 @@ const SalesReportList: React.FC = () => {
         Filters: filters
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('API error in tablePage:', error);
+        throw error;
+      }
+
+      console.log('Received sales reports data:', data);
 
       setReports(data?.List || []);
       setTotalCount(data?.VirtualCount || 0);
@@ -119,8 +127,10 @@ const SalesReportList: React.FC = () => {
   };
 
   const handleDelete = async (reportId: number) => {
+    console.log('Attempting to delete report ID:', reportId);
     // Check delete permission - only admin users can delete
     if (!canDeleteSales) {
+      console.warn('Delete permission denied for user');
       toast({
         title: "Access Denied",
         description: "Only administrators can delete sales reports.",
@@ -135,7 +145,10 @@ const SalesReportList: React.FC = () => {
 
     try {
       const { error } = await window.ezsite.apis.tableDelete('12356', { ID: reportId });
-      if (error) throw error;
+      if (error) {
+        console.error('API error in tableDelete:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -153,8 +166,10 @@ const SalesReportList: React.FC = () => {
   };
 
   const handleEdit = (reportId: number) => {
+    console.log('Attempting to edit report ID:', reportId);
     // Check edit permission - only admin users can edit
     if (!canEditSales) {
+      console.warn('Edit permission denied for user');
       toast({
         title: "Access Denied",
         description: "Only administrators can edit sales reports.",
@@ -167,8 +182,10 @@ const SalesReportList: React.FC = () => {
   };
 
   const handleCreateReport = () => {
+    console.log('Attempting to create new sales report');
     // Check create permission
     if (!canCreateSales) {
+      console.warn('Create permission denied for user');
       toast({
         title: "Access Denied",
         description: "You don't have permission to create sales reports.",
@@ -458,11 +475,11 @@ const SalesReportList: React.FC = () => {
                         const paymentTotal = cash + credit + debit + mobile + grocery;
                         const isPaymentCorrect = Math.abs(paymentTotal - total) <= 0.01;
 
-                        return isPaymentCorrect ?
-                        <span className="text-green-600 text-xs">✓</span> :
-
-                        <span className="text-red-600 text-xs" title={`Payment total: ${formatCurrency(paymentTotal)}`}>⚠️</span>;
-
+                        return isPaymentCorrect ? (
+                          <span className="text-green-600 text-xs">✓</span>
+                        ) : (
+                          <span className="text-red-600 text-xs" title={`Payment total: ${formatCurrency(paymentTotal)}`}>⚠️</span>
+                        );
                       })()}
                         </div>
                       </TableCell>
