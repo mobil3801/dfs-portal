@@ -41,6 +41,13 @@ interface UserProfile {
   id: string | number; // UUID or number
   user_id: string | number; // UUID or number
   role: string;
+  station_access: string[]; // Array of station UUIDs
+  employee_id: string;
+  phone: string;
+  hire_date: string;
+  is_active: boolean;
+  // detailed_permissions is not a real column, removing for now
+}
 
 const UserManagement: React.FC = () => {
   const { isAdmin } = useAdminAccess();
