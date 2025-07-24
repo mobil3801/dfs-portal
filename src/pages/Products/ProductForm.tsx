@@ -1131,7 +1131,7 @@ const ProductForm = () => {
                         onChange={(e) => handleInputChange('bar_code_case', e.target.value)} />
 
                       <BarcodeScanner
-                        onScanned={(barcode) => handleBarcodeScanned('bar_code_case', barcode)} />
+                        onScan={(barcode) => handleBarcodeScanned('bar_code_case', barcode)} />
 
                     </div>
                   </div>
@@ -1146,7 +1146,7 @@ const ProductForm = () => {
                         onChange={(e) => handleInputChange('bar_code_unit', e.target.value)} />
 
                       <BarcodeScanner
-                        onScanned={(barcode) => handleBarcodeScanned('bar_code_unit', barcode)} />
+                        onScan={(barcode) => handleBarcodeScanned('bar_code_unit', barcode)} />
 
                     </div>
                   </div>

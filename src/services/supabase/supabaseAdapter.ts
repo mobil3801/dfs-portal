@@ -203,7 +203,12 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   }
 
   async tablePage(tableId: string | number, params: any): Promise<{data: any, error: string | null}> {
-    const context = {
+    const context: {
+      operation: string;
+      tableId: string | number;
+      params: any;
+      tableName?: string;
+    } = {
       operation: 'tablePage',
       tableId,
       params
@@ -292,7 +297,12 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   }
 
   async tableCreate(tableId: string | number, data: any): Promise<{error: string | null}> {
-    const context = {
+    const context: {
+      operation: string;
+      tableId: string | number;
+      data: any;
+      tableName?: string;
+    } = {
       operation: 'tableCreate',
       tableId,
       data: { ...data, sensitive_fields_removed: true } // Don't log sensitive data
@@ -347,7 +357,12 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   }
 
   async tableUpdate(tableId: string | number, data: any): Promise<{error: string | null}> {
-    const context = {
+    const context: {
+      operation: string;
+      tableId: string | number;
+      data: { id: any; sensitive_fields_removed: boolean; };
+      tableName?: string;
+    } = {
       operation: 'tableUpdate',
       tableId,
       data: { id: data.ID || data.id, sensitive_fields_removed: true } // Only log the ID
@@ -413,7 +428,12 @@ class SupabaseAdapter implements EzsiteApiAdapter {
   }
 
   async tableDelete(tableId: string | number, data: any): Promise<{error: string | null}> {
-    const context = {
+    const context: {
+      operation: string;
+      tableId: string | number;
+      recordId: any;
+      tableName?: string;
+    } = {
       operation: 'tableDelete',
       tableId,
       recordId: data.ID || data.id

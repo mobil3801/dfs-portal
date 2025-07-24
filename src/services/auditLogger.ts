@@ -1,6 +1,6 @@
 interface AuditLogEntry {
   event_type: string;
-  user_id?: number;
+  user_id?: number | string;
   username?: string;
   ip_address?: string;
   user_agent?: string;
@@ -18,7 +18,7 @@ interface AuditLogEntry {
 
 interface AuditLogFilters {
   event_type?: string;
-  user_id?: number;
+  user_id?: number | string;
   event_status?: string;
   risk_level?: string;
   date_from?: string;
@@ -75,7 +75,7 @@ class AuditLoggerService {
   eventType: string,
   status: 'Success' | 'Failed' | 'Blocked' | 'Suspicious',
   details: {
-    user_id?: number;
+    user_id?: number | string;
     username?: string;
     resource_accessed?: string;
     action_performed?: string;
@@ -111,7 +111,7 @@ class AuditLoggerService {
   }
 
   // Convenience methods for common events
-  async logLogin(username: string, success: boolean, userId?: number, failureReason?: string): Promise<void> {
+  async logLogin(username: string, success: boolean, userId?: number | string, failureReason?: string): Promise<void> {
     await this.logEvent(
       'Login',
       success ? 'Success' : 'Failed',
@@ -125,7 +125,7 @@ class AuditLoggerService {
     );
   }
 
-  async logLogout(username: string, userId?: number): Promise<void> {
+  async logLogout(username: string, userId?: number | string): Promise<void> {
     await this.logEvent(
       'Logout',
       'Success',
@@ -164,7 +164,7 @@ class AuditLoggerService {
   async logDataAccess(
   resource: string,
   action: string,
-  userId?: number,
+  userId?: number | string,
   username?: string,
   station?: string)
   : Promise<void> {
@@ -184,7 +184,7 @@ class AuditLoggerService {
   async logDataModification(
   resource: string,
   action: string,
-  userId?: number,
+  userId?: number | string,
   username?: string,
   station?: string,
   changes?: any)
@@ -204,8 +204,8 @@ class AuditLoggerService {
   }
 
   async logPermissionChange(
-  targetUserId: number,
-  changedBy: number,
+  targetUserId: number | string,
+  changedBy: number | string,
   changes: any)
   : Promise<void> {
     await this.logEvent(
@@ -222,7 +222,7 @@ class AuditLoggerService {
 
   async logAdminAction(
   action: string,
-  userId: number,
+  userId: number | string,
   details?: any)
   : Promise<void> {
     await this.logEvent(
@@ -238,7 +238,7 @@ class AuditLoggerService {
 
   async logSuspiciousActivity(
   description: string,
-  userId?: number,
+  userId?: number | string,
   username?: string,
   details?: any)
   : Promise<void> {

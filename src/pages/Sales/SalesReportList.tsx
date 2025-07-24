@@ -216,15 +216,15 @@ const SalesReportList: React.FC = () => {
 
   // Calculate totals for all visible reports with proper validation
   const totals = reports.reduce((acc, report) => {
-    // Ensure all values are properly parsed as numbers
-    const totalSales = parseFloat(report.total_sales) || 0;
-    const cashAmount = parseFloat(report.cash_amount) || 0;
-    const creditCardAmount = parseFloat(report.credit_card_amount) || 0;
-    const debitCardAmount = parseFloat(report.debit_card_amount) || 0;
-    const mobileAmount = parseFloat(report.mobile_amount) || 0;
-    const grocerySales = parseFloat(report.grocery_sales) || 0;
-    const totalGallons = parseFloat(report.total_gallons) || 0;
-    const lotteryTotalCash = parseFloat(report.lottery_total_cash) || 0;
+    // Ensure all values are properly handled as numbers
+    const totalSales = report.total_sales || 0;
+    const cashAmount = report.cash_amount || 0;
+    const creditCardAmount = report.credit_card_amount || 0;
+    const debitCardAmount = report.debit_card_amount || 0;
+    const mobileAmount = report.mobile_amount || 0;
+    const grocerySales = report.grocery_sales || 0;
+    const totalGallons = report.total_gallons || 0;
+    const lotteryTotalCash = report.lottery_total_cash || 0;
 
     // Calculate payment method totals
     const paymentTotal = cashAmount + creditCardAmount + debitCardAmount + mobileAmount;
@@ -449,12 +449,12 @@ const SalesReportList: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <span>{formatCurrency(report.total_sales)}</span>
                           {(() => {
-                        const total = parseFloat(report.total_sales) || 0;
-                        const cash = parseFloat(report.cash_amount) || 0;
-                        const credit = parseFloat(report.credit_card_amount) || 0;
-                        const debit = parseFloat(report.debit_card_amount) || 0;
-                        const mobile = parseFloat(report.mobile_amount) || 0;
-                        const grocery = parseFloat(report.grocery_sales) || 0;
+                        const total = report.total_sales || 0;
+                        const cash = report.cash_amount || 0;
+                        const credit = report.credit_card_amount || 0;
+                        const debit = report.debit_card_amount || 0;
+                        const mobile = report.mobile_amount || 0;
+                        const grocery = report.grocery_sales || 0;
                         const paymentTotal = cash + credit + debit + mobile + grocery;
                         const isPaymentCorrect = Math.abs(paymentTotal - total) <= 0.01;
 
@@ -468,7 +468,7 @@ const SalesReportList: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <span>{parseFloat(report.total_gallons || '0').toFixed(2)}</span>
+                          <span>{(report.total_gallons || 0).toFixed(2)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
