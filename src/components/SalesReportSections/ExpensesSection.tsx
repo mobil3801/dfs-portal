@@ -25,9 +25,9 @@ interface ExpenseFormData {
   vendor: string;
   othersName: string;
   amount: number;
-  paymentType: 'Cash' | 'Credit' | 'Cheque';
+  paymentType: 'Cash' | 'Credit Card' | 'Cheque';
   chequeNumber: string;
-  invoiceFileId?: number;
+  invoiceFileId?: string | number;
   invoiceFileName?: string;
 }
 
@@ -105,9 +105,9 @@ const ExpensesSection: React.FC<ExpensesSectionProps> = ({
         vendor_name: formData.vendor || '',
         others_name: formData.othersName,
         amount: formData.amount,
-        payment_type: formData.paymentType,
+        payment_type: formData.paymentType === 'Credit Card' ? 'Credit' : formData.paymentType,
         cheque_number: formData.chequeNumber || '',
-        invoice_file_id: formData.invoiceFileId || 0,
+        invoice_file_id: Number(formData.invoiceFileId) || 0,
         station: station,
         expense_date: reportDate || new Date().toISOString(),
         created_by: 1 // TODO: Get from auth context

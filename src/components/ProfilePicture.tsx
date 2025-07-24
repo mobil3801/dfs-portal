@@ -163,7 +163,7 @@ const ProfilePicture: React.FC<ProfilePictureProps> = ({
     const timestamp = Date.now();
 
     // Handle different types of imageId values
-    if (typeof imageId === 'string' && imageId.startsWith('http')) {
+    if (imageId && typeof imageId === 'string' && imageId.startsWith('http')) {
       // If imageId is already a complete URL, use it directly
       return imageId;
     }
@@ -332,12 +332,13 @@ const ProfilePicture: React.FC<ProfilePictureProps> = ({
     setIsUploading(true);
 
     try {
-      const { data: fileId, error } = await window.ezsite.apis.upload({
+      const uploadResult = await window.ezsite.apis.upload({
         filename: selectedFile.name,
         file: selectedFile
       });
 
-      if (error) throw error;
+      if (uploadResult.error) throw uploadResult.error;
+      const fileId = uploadResult.data;
 
       // Update the record with the new image ID
       if (tableName && recordId) {

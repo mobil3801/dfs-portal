@@ -102,12 +102,13 @@ const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
   const uploadToDatabase = async (file: File): Promise<FileUploadResult> => {
     try {
       // Upload file to storage
-      const { data: storeFileId, error: uploadError } = await window.ezsite.apis.upload({
+      const uploadResult = await window.ezsite.apis.upload({
         filename: file.name,
         file: file
       });
 
-      if (uploadError) throw uploadError;
+      if (uploadResult.error) throw uploadResult.error;
+      const storeFileId = uploadResult.data;
 
       // Save file metadata to database
       const fileData = {
@@ -125,16 +126,17 @@ const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
         file_url: `${window.location.origin}/file/${storeFileId}`
       };
 
-      const { data: insertResult, error: insertError } = await window.ezsite.apis.tableCreate(26928, fileData);
+      const insertResult = await window.ezsite.apis.tableCreate(26928, fileData);
 
-      if (insertError) throw insertError;
+      if (insertResult.error) throw insertResult.error;
+      const fileId = insertResult.data?.id;
 
       return {
-        fileId: insertResult.id,
+        fileId: fileId || 0,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
-        storeFileId: storeFileId,
+        storeFileId: storeFileId || 0,
         uploadDate: fileData.upload_date,
         fileUrl: fileData.file_url
       };
