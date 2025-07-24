@@ -72,14 +72,14 @@ const UserManagement: React.FC = () => {
   // Batch edit form data
   const [batchEditData, setBatchEditData] = useState({
     role: '',
-    station: '',
+    station_access: [] as string[],
     is_active: true
   });
 
   const roles = ['admin', 'manager', 'employee'];
   const [stations, setStations] = useState<any[]>([]);
 
-  interface FormData {
+interface FormData {
     user_id: number;
     role: string;
     station_access: string[];
@@ -206,7 +206,7 @@ const fetchStations = async () => {
       setFormData({
         user_id: generateRandomUserId(),
         role: 'employee',
-        station: 'MOBIL',
+        station_access: [],
         employee_id: '',
         phone: '',
         hire_date: '',
@@ -319,7 +319,7 @@ const fetchStations = async () => {
       
 
       const updates = selectedData.map((profile) => ({
-        id: profile.id,
+        id: Number(profile.id),
         ...(batchEditData.role && { role: batchEditData.role }),
         ...(batchEditData.station_access && { station_access: batchEditData.station_access }),
         is_active: batchEditData.is_active
@@ -417,16 +417,16 @@ const fetchStations = async () => {
     const searchTermLower = searchTerm ? searchTerm.toLowerCase() : '';
 
     const matchesSearch = !searchTermLower || (
-      safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
-      safeToLowerCase(profile.phone).includes(searchTermLower) ||
-      safeToLowerCase(profile.role).includes(searchTermLower)
+      safeToLowerCase(profile?.employee_id).includes(searchTermLower) ||
+      safeToLowerCase(profile?.phone).includes(searchTermLower) ||
+      safeToLowerCase(profile?.role).includes(searchTermLower)
     );
     
-    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile.role) === safeToLowerCase(selectedRole);
+    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile?.role) === safeToLowerCase(selectedRole);
     
     // Safe station filtering with null checks
     const matchesStation = selectedStation === 'All' || 
-      (Array.isArray(profile.station_access) && profile.station_access.some(station => 
+      (Array.isArray(profile?.station_access) && profile.station_access.some(station => 
         safeToLowerCase(station).includes(safeToLowerCase(selectedStation))
       ));
 
@@ -444,19 +444,23 @@ const fetchStations = async () => {
 
   const getStationBadgeColor = (stationName: string | undefined | null) => {
     if (!stationName || typeof stationName !== 'string') return 'bg-gray-100 text-gray-800';
-    const station = stations.find(s => s?.name === stationName);
+    const station = stations.find(s => s && typeof s === 'object' && s.name === stationName);
     if (!station || !station.id) return 'bg-gray-100 text-gray-800';
 
     // Logic to return a color based on station name/id - can be expanded
-    const hash = String(station.id).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
-    const colors = [
-      'bg-blue-100 text-blue-800',
-      'bg-purple-100 text-purple-800',
-      'bg-orange-100 text-orange-800',
-      'bg-teal-100 text-teal-800',
-      'bg-pink-100 text-pink-800',
-    ];
-    return colors[Math.abs(hash) % colors.length];
+    try {
+      const hash = String(station.id).split('').reduce((acc: number, char: string) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+      const colors = [
+        'bg-blue-100 text-blue-800',
+        'bg-purple-100 text-purple-800',
+        'bg-orange-100 text-orange-800',
+        'bg-teal-100 text-teal-800',
+        'bg-pink-100 text-pink-800',
+      ];
+      return colors[Math.abs(hash) % colors.length];
+    } catch (error) {
+      return 'bg-gray-100 text-gray-800';
+    }
   };
 
 
@@ -984,13 +988,13 @@ const fetchStations = async () => {
                   </div>
                   <div>
                     <Label htmlFor="edit_station">Station</Label>
-                    <Select value={formData.station} onValueChange={(value) => setFormData({ ...formData, station: value })}>
+                    <Select value={formData.station_access[0] || ''} onValueChange={(value) => setFormData({ ...formData, station_access: [value] })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {stations.map((station) =>
-                        <SelectItem key={station} value={station}>{station}</SelectItem>
+                        <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
