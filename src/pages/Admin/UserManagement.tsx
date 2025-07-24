@@ -38,16 +38,9 @@ import {
 'lucide-react';
 
 interface UserProfile {
-  id: string; // UUID
-  user_id: string; // UUID
+  id: string | number; // UUID or number
+  user_id: string | number; // UUID or number
   role: string;
-  station_access: string[]; // Array of station UUIDs
-  employee_id: string;
-  phone: string;
-  hire_date: string;
-  is_active: boolean;
-  // detailed_permissions is not a real column, removing for now
-}
 
 const UserManagement: React.FC = () => {
   const { isAdmin } = useAdminAccess();
@@ -418,13 +411,17 @@ const fetchStations = async () => {
 
     const matchesSearch = !searchTermLower || (
       safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
-      safeToLowerCase(profile.phone).includes(searchTermLower)
+      safeToLowerCase(profile.phone).includes(searchTermLower) ||
+      safeToLowerCase(profile.role).includes(searchTermLower)
     );
     
-    const matchesRole = selectedRole === 'All' || profile.role === selectedRole;
-    // Temporarily disable station filtering until it's properly implemented
-    // const matchesStation = selectedStation === 'All' || profile.station_access?.includes(selectedStation);
-    const matchesStation = true;
+    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile.role) === safeToLowerCase(selectedRole);
+    
+    // Safe station filtering with null checks
+    const matchesStation = selectedStation === 'All' || 
+      (Array.isArray(profile.station_access) && profile.station_access.some(station => 
+        safeToLowerCase(station).includes(safeToLowerCase(selectedStation))
+      ));
 
     return matchesSearch && matchesRole && matchesStation;
   });
