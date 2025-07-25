@@ -112,76 +112,38 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
       setLoading(true);
       setError(null);
 
-      // cspell:ignore ezsite
-      const response = await window.ezsite.apis.tablePage("25712", {
-        PageNo: 1,
-        PageSize: 100,
-        OrderByField: "id",
-        IsAsc: true,
-        Filters: []
-      });
+      // Try to fetch modules from Supabase
+      const { data: moduleData, error: fetchError } = await supabase
+        .from('module_access')
+        .select('*')
+        .eq('is_active', true)
+        .order('id', { ascending: true });
 
-      if (response.error) {
-        throw new Error(response.error);
+      if (fetchError) {
+        console.warn('Supabase fetch error:', fetchError.message);
+        throw new Error(fetchError.message);
       }
 
-      let moduleData = response.data.List || [];
-
-      // Handle both old and new schema formats for backward compatibility
-      moduleData = moduleData.map((module: any) => {
-        // If using new schema with separate columns
-        if ('create_enabled' in module) {
-          return {
-            id: module.id,
-            module_name: module.module_name,
-            display_name: module.display_name || module.module_name,
-            create_enabled: module.create_enabled,
-            edit_enabled: module.edit_enabled,
-            delete_enabled: module.delete_enabled,
-            created_at: module.created_at,
-            updated_at: module.updated_at
-          };
-        }
-        
-        // If using old schema with permissions JSON
-        if ('permissions' in module && module.permissions) {
-          const permissions = typeof module.permissions === 'string' 
-            ? JSON.parse(module.permissions) 
-            : module.permissions;
-          
-          return {
-            id: module.id,
-            module_name: module.module_name,
-            display_name: module.display_name || module.module_name,
-            create_enabled: permissions.create_enabled ?? true,
-            edit_enabled: permissions.edit_enabled ?? true,
-            delete_enabled: permissions.delete_enabled ?? true,
-            created_at: module.created_at,
-            updated_at: module.updated_at
-          };
-        }
-
-        // Fallback to defaults
-        return {
-          id: module.id,
-          module_name: module.module_name,
-          display_name: module.display_name || module.module_name,
-          create_enabled: true,
-          edit_enabled: true,
-          delete_enabled: true,
-          created_at: module.created_at,
-          updated_at: module.updated_at
-        };
-      });
+      // Transform the data to match our interface
+      const transformedData = (moduleData || []).map((module: any) => ({
+        id: module.id,
+        module_name: module.module_name,
+        display_name: module.display_name || module.module_name,
+        create_enabled: module.create_enabled ?? true,
+        edit_enabled: module.edit_enabled ?? true,
+        delete_enabled: module.delete_enabled ?? true,
+        created_at: module.created_at,
+        updated_at: module.updated_at
+      }));
 
       // If no modules exist, create default ones
-      if (moduleData.length === 0) {
+      if (transformedData.length === 0) {
         console.log('No modules found, creating default modules...');
         await createDefaultModules();
         return;
       }
 
-      setModuleAccess(moduleData);
+      setModuleAccess(transformedData);
       setIsModuleAccessEnabled(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch module access';
@@ -189,13 +151,15 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
       setIsModuleAccessEnabled(false);
       console.error('Error fetching module access:', err);
 
-      // Set default permissions when there's an error
+      // Fallback: Set default permissions when there's an error
+      console.log('Using fallback default modules due to database error');
       setModuleAccess(defaultModules.map((module, index) => ({
         id: index + 1,
         ...module,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })));
+      setIsModuleAccessEnabled(true); // Enable with fallback data
     } finally {
       setLoading(false);
     }
@@ -203,22 +167,23 @@ export const ModuleAccessProvider: React.FC<{children: React.ReactNode;}> = ({ c
 
   const updateModuleAccess = async (id: number, updates: Partial<ModuleAccess>) => {
     try {
-      // cspell:ignore ezsite
-      const response = await window.ezsite.apis.tableUpdate("25712", {
-        ID: id,
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const { error: updateError } = await supabase
+        .from('module_access')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
 
-      if (response.error) {
-        throw new Error(response.error);
+      if (updateError) {
+        throw new Error(updateError.message);
       }
 
       // Update local state immediately for real-time feedback
       setModuleAccess((prev) =>
-      prev.map((module) =>
-      module.id === id ? { ...module, ...updates, updated_at: new Date().toISOString() } : module
-      )
+        prev.map((module) =>
+          module.id === id ? { ...module, ...updates, updated_at: new Date().toISOString() } : module
+        )
       );
 
       toast.success('Module access updated successfully');
