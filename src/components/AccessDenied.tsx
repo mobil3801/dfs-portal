@@ -20,7 +20,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
   className = ''
 }) => {
   const navigate = useNavigate();
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, isLoading } = useAuth();
 
   const handleRefresh = () => {
     window.location.reload();
