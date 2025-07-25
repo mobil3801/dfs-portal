@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useBatchSelection } from '@/hooks/use-batch-selection';
 import BatchActionBar from '@/components/BatchActionBar';
@@ -23,6 +24,7 @@ import CreateUserDialog from '@/components/CreateUserDialog';
 import SimpleRoleAssignment from '@/components/SimpleRoleAssignment';
 import BulkRoleManager from '@/components/BulkRoleManager';
 import RoleOverview from '@/components/RoleOverview';
+import { supabase } from '@/lib/supabase';
 import {
   Users,
   Plus,
@@ -34,7 +36,10 @@ import {
   Shield,
   Settings,
   RefreshCw,
-  Database } from
+  Database,
+  Activity,
+  Wifi,
+  WifiOff } from
 'lucide-react';
 
 interface UserProfile {
@@ -64,6 +69,8 @@ const UserManagement: React.FC = () => {
   const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfile | null>(null);
   const [batchActionLoading, setBatchActionLoading] = useState(false);
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
+  const [realTimeConnected, setRealTimeConnected] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const { toast } = useToast();
 
   // Batch selection hook
@@ -108,28 +115,82 @@ interface FormData {
   useEffect(() => {
     fetchData();
     fetchStations();
-    // Set up real-time refresh interval
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000); // Refresh every 30 seconds
+    
+    // Set up Supabase real-time subscription
+    const subscription = supabase
+      .channel('user_profiles_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_profiles' 
+        }, 
+        (payload) => {
+          console.log('Real-time user profile change detected:', payload);
+          setRealTimeConnected(true);
+          setLastSyncTime(new Date().toLocaleTimeString());
+          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            setUserProfiles(prev => [...prev, payload.new as UserProfile]);
+            toast({
+              title: "New User Added",
+              description: `User ${payload.new.employee_id} was added in real-time`
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setUserProfiles(prev => 
+              prev.map(profile => 
+                profile.id === payload.new.id ? payload.new as UserProfile : profile
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setUserProfiles(prev => 
+              prev.filter(profile => profile.id !== payload.old.id)
+            );
+            toast({
+              title: "User Removed",
+              description: `User was removed in real-time`
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setRealTimeConnected(true);
+          toast({
+            title: "Real-Time Connected",
+            description: "Live data synchronization is now active"
+          });
+        } else if (status === 'CHANNEL_ERROR') {
+          setRealTimeConnected(false);
+          toast({
+            title: "Connection Error",
+            description: "Real-time connection failed",
+            variant: "destructive"
+          });
+        }
+      });
 
-    return () => clearInterval(interval);
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 const fetchStations = async () => {
       try {
-        const { data, error } = await window.ezsite.apis.tablePage(12599, {
-          PageNo: 1,
-          PageSize: 100, // Assuming max 100 stations, adjust if needed
-        });
+        const { data, error } = await supabase
+          .from('stations')
+          .select('*')
+          .order('created_at', { ascending: false });
+
         if (error) {
-          throw new Error(error);
+          throw error;
         }
-        setStations(data?.List || []);
+        setStations(data || []);
       } catch (error) {
         console.error('Error fetching stations:', error);
         toast({
-          title: "Database Error",
-          description: `Failed to fetch stations`,
+          title: "Supabase Error",
+          description: `Failed to fetch stations: ${error.message}`,
           variant: "destructive"
         });
       }
@@ -145,6 +206,7 @@ const fetchStations = async () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
+    setLastSyncTime(new Date().toLocaleTimeString());
     toast({
       title: "Success",
       description: "Real-time data refreshed successfully"
@@ -154,27 +216,25 @@ const fetchStations = async () => {
 
   const fetchUserProfiles = async () => {
     try {
-      
-      const { data, error } = await window.ezsite.apis.tablePage(11725, {
-        PageNo: 1,
-        PageSize: 100,
-        OrderByField: "id",
-        IsAsc: false,
-        Filters: []
-      });
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('id', { ascending: false });
 
       if (error) {
-        console.error('Database API returned error:', error);
+        console.error('Supabase error:', error);
         throw error;
       }
 
-      
-      setUserProfiles(data?.List || []);
+      setUserProfiles(data || []);
+      setRealTimeConnected(true);
+      setLastSyncTime(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Error fetching user profiles:', error);
+      setRealTimeConnected(false);
       toast({
-        title: "Database Error",
-        description: `Failed to fetch user profiles: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to fetch user profiles: ${error.message}`,
         variant: "destructive"
       });
       setUserProfiles([]);
@@ -193,13 +253,16 @@ const fetchStations = async () => {
     }
 
     try {
-      
-      const { error } = await window.ezsite.apis.tableCreate(11725, formData);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert([formData])
+        .select();
+
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "User profile created successfully"
+        description: "User profile created successfully with real-time sync"
       });
 
       setIsAddDialogOpen(false);
@@ -212,12 +275,12 @@ const fetchStations = async () => {
         hire_date: '',
         is_active: true
       });
-      fetchUserProfiles();
+      // Real-time subscription will handle the UI update
     } catch (error) {
       console.error('Error creating profile:', error);
       toast({
-        title: "Database Error",
-        description: `Failed to create user profile: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to create user profile: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -236,26 +299,27 @@ const fetchStations = async () => {
     }
 
     try {
-      
-      const { error } = await window.ezsite.apis.tableUpdate(11725, {
-        id: selectedUserProfile.id,
-        ...formData
-      });
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(formData)
+        .eq('id', selectedUserProfile.id)
+        .select();
+
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "User profile updated successfully"
+        description: "User profile updated successfully with real-time sync"
       });
 
       setIsEditDialogOpen(false);
       setSelectedUserProfile(null);
-      fetchUserProfiles();
+      // Real-time subscription will handle the UI update
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
-        title: "Database Error",
-        description: `Failed to update user profile: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to update user profile: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -265,21 +329,24 @@ const fetchStations = async () => {
     if (!confirm('Are you sure you want to delete this user profile? This action cannot be undone.')) return;
 
     try {
-      
-      const { error } = await window.ezsite.apis.tableDelete(11725, { id: profileId });
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', profileId);
+
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "User profile deleted successfully"
+        description: "User profile deleted successfully with real-time sync"
       });
 
-      fetchUserProfiles();
+      // Real-time subscription will handle the UI update
     } catch (error) {
       console.error('Error deleting profile:', error);
       toast({
-        title: "Database Error",
-        description: `Failed to delete user profile: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to delete user profile: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -317,32 +384,33 @@ const fetchStations = async () => {
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
       
+      const updateData: any = {};
+      if (batchEditData.role) updateData.role = batchEditData.role;
+      if (batchEditData.station_access.length > 0) updateData.station_access = batchEditData.station_access;
+      updateData.is_active = batchEditData.is_active;
 
-      const updates = selectedData.map((profile) => ({
-        id: Number(profile.id),
-        ...(batchEditData.role && { role: batchEditData.role }),
-        ...(batchEditData.station_access && { station_access: batchEditData.station_access }),
-        is_active: batchEditData.is_active
-      }));
+      const selectedIds = selectedData.map(profile => profile.id);
 
-      for (const update of updates) {
-        const { error } = await window.ezsite.apis.tableUpdate(11725, update);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(updateData)
+        .in('id', selectedIds);
+
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Updated ${selectedData.length} user profiles successfully`
+        description: `Updated ${selectedData.length} user profiles successfully with real-time sync`
       });
 
       setIsBatchEditDialogOpen(false);
       batchSelection.clearSelection();
-      fetchUserProfiles();
+      // Real-time subscription will handle the UI update
     } catch (error) {
       console.error('Error in batch edit:', error);
       toast({
-        title: "Database Error",
-        description: `Failed to update profiles: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to update profiles: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -354,26 +422,28 @@ const fetchStations = async () => {
     setBatchActionLoading(true);
     try {
       const selectedData = batchSelection.getSelectedData(filteredProfiles, (profile) => profile.id);
-      
+      const selectedIds = selectedData.map(profile => profile.id);
 
-      for (const profile of selectedData) {
-        const { error } = await window.ezsite.apis.tableDelete(11725, { id: profile.id });
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .in('id', selectedIds);
+
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Deleted ${selectedData.length} user profiles successfully`
+        description: `Deleted ${selectedData.length} user profiles successfully with real-time sync`
       });
 
       setIsBatchDeleteDialogOpen(false);
       batchSelection.clearSelection();
-      fetchUserProfiles();
+      // Real-time subscription will handle the UI update
     } catch (error) {
       console.error('Error in batch delete:', error);
       toast({
-        title: "Database Error",
-        description: `Failed to delete profiles: ${error}`,
+        title: "Supabase Error",
+        description: `Failed to delete profiles: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -493,10 +563,28 @@ const fetchStations = async () => {
           <Database className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Real-Time User Management</h1>
-            <p className="text-sm text-green-600 font-medium">✓ Production Database Connected - Live Data & Permissions</p>
+            <p className="text-sm text-green-600 font-medium">✓ Supabase Connected - Live Data & Real-Time Updates</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
+          {/* Real-Time Status */}
+          <div className="flex items-center space-x-2 px-3 py-1 bg-gray-50 rounded-lg">
+            {realTimeConnected ? (
+              <>
+                <Wifi className="w-4 h-4 text-green-600" />
+                <span className="text-sm text-green-700">Live Sync</span>
+                {lastSyncTime && (
+                  <span className="text-xs text-gray-500">({lastSyncTime})</span>
+                )}
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-red-600" />
+                <span className="text-sm text-red-700">Disconnected</span>
+              </>
+            )}
+          </div>
+          
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             <Database className="w-3 h-3 mr-1" />
             {userProfiles.length} Users
@@ -507,10 +595,27 @@ const fetchStations = async () => {
             variant="outline"
             className="flex items-center space-x-2">
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh Data'}</span>
+            <span>{refreshing ? 'Syncing...' : 'Manual Sync'}</span>
           </Button>
         </div>
       </div>
+
+      {/* Real-Time Connection Alert */}
+      {!realTimeConnected && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <Activity className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Real-time connection is not active. Data may not be synchronized automatically. 
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-yellow-800 underline ml-1"
+              onClick={refreshData}
+            >
+              Try reconnecting
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="profiles" className="w-full">

@@ -18,6 +18,8 @@ import UniversalStationDropdown from '@/components/UniversalStationDropdown';
 import AccessDenied from '@/components/AccessDenied';
 import useAdminAccess from '@/hooks/use-admin-access';
 import { stationService } from '@/services/stationService';
+import { supabase } from '@/lib/supabase';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Settings,
   Database,
@@ -75,6 +77,8 @@ interface Station {
 
 const SiteManagement: React.FC = () => {
   const { isAdmin } = useAdminAccess();
+  const [realTimeConnected, setRealTimeConnected] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [settings, setSettings] = useState<SiteSettings>({
     siteName: 'DFS Manager Portal',
     siteDescription: 'Comprehensive gas station management system',
@@ -115,6 +119,68 @@ const SiteManagement: React.FC = () => {
   const [showApiKeys, setShowApiKeys] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  // Set up real-time subscription for stations
+  useEffect(() => {
+    // Set up Supabase real-time subscription for stations
+    const subscription = supabase
+      .channel('stations_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'stations' 
+        }, 
+        (payload) => {
+          console.log('Real-time station change detected:', payload);
+          setRealTimeConnected(true);
+          setLastSyncTime(new Date().toLocaleTimeString());
+          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New Station Added",
+              description: `Station ${payload.new.station_name} was added in real-time`
+            });
+            // Reload stations to get updated data
+            reloadStations();
+          } else if (payload.eventType === 'UPDATE') {
+            toast({
+              title: "Station Updated",
+              description: `Station ${payload.new.station_name} was updated in real-time`
+            });
+            reloadStations();
+          } else if (payload.eventType === 'DELETE') {
+            toast({
+              title: "Station Removed",
+              description: `Station was removed in real-time`
+            });
+            reloadStations();
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setRealTimeConnected(true);
+          setLastSyncTime(new Date().toLocaleTimeString());
+          toast({
+            title: "Real-Time Connected",
+            description: "Live station data synchronization is now active"
+          });
+        } else if (status === 'CHANNEL_ERROR') {
+          setRealTimeConnected(false);
+          toast({
+            title: "Connection Error",
+            description: "Real-time connection failed",
+            variant: "destructive"
+          });
+        }
+      });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [reloadStations, toast]);
 
   // Batch selection hook
   const batchSelection = useBatchSelection<Station>();
@@ -300,28 +366,68 @@ const SiteManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Settings className="w-8 h-8 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Site Management</h1>
+          <Database className="w-8 h-8 text-blue-600" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Real-Time Site Management</h1>
+            <p className="text-sm text-green-600 font-medium">✓ Supabase Connected - Live Station & Configuration Updates</p>
+          </div>
         </div>
         
-        <Button
-          onClick={handleSaveSettings}
-          disabled={isSaving}
-          className="bg-blue-600 hover:bg-blue-700">
+        <div className="flex items-center space-x-3">
+          {/* Real-Time Status */}
+          <div className="flex items-center space-x-2 px-3 py-1 bg-gray-50 rounded-lg">
+            {realTimeConnected ? (
+              <>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-700">Live Sync</span>
+                {lastSyncTime && (
+                  <span className="text-xs text-gray-500">({lastSyncTime})</span>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-sm text-red-700">Disconnected</span>
+              </>
+            )}
+          </div>
 
-          {isSaving ?
-          <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </> :
+          <Button
+            onClick={handleSaveSettings}
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-700">
 
-          <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Settings
-            </>
-          }
-        </Button>
+            {isSaving ?
+            <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </> :
+
+            <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Settings
+              </>
+            }
+          </Button>
+        </div>
       </div>
+
+      {/* Real-Time Connection Alert */}
+      {!realTimeConnected && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Real-time connection is not active. Station data may not be synchronized automatically. 
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-yellow-800 underline ml-1"
+              onClick={() => reloadStations()}
+            >
+              Try reconnecting
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* System Status */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

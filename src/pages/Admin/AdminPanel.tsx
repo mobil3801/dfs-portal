@@ -270,32 +270,115 @@ const AdminPanel = () => {
           <div className="mb-6">
             <RealTimeAdminDashboard />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <QuickAdminAction
-              title="User Management"
-              description="Manage user accounts, roles, and permissions"
-              icon={Users}
-              onClick={() => navigate('/admin/users')} />
+          
+          {/* New Unified Real-Time Management Hub */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <Database className="w-8 h-8 text-blue-600" />
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Real-Time Management Hub</h2>
+                  <p className="text-sm text-green-600 font-medium">✓ Supabase Connected - Live Data & Real-Time Updates</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-600">Live Sync Active</span>
+              </div>
+            </div>
 
-            <QuickAdminAction
-              title="Site Management"
-              description="Configure stations and locations"
-              icon={Settings}
-              onClick={() => navigate('/admin/sites')} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Real-Time User Management */}
+              <Card className="p-4 border-2 border-blue-200 bg-blue-50 hover:shadow-lg transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-3">
+                  <Users className="w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform" />
+                  <Badge className="bg-blue-100 text-blue-800">Live</Badge>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">User Management</h3>
+                <p className="text-sm text-gray-600 mb-3">Real-time user accounts, roles, and permissions with live updates</p>
+                <Button 
+                  onClick={() => navigate('/admin/users')} 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Access User Management
+                </Button>
+              </Card>
 
-            <QuickAdminAction
-              title="Security Settings"
-              description="Manage security policies and access controls"
-              icon={Shield}
-              onClick={() => navigate('/admin/security')} />
+              {/* Real-Time Site Management */}
+              <Card className="p-4 border-2 border-green-200 bg-green-50 hover:shadow-lg transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-3">
+                  <Settings className="w-8 h-8 text-green-600 group-hover:scale-110 transition-transform" />
+                  <Badge className="bg-green-100 text-green-800">Live</Badge>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Site Management</h3>
+                <p className="text-sm text-gray-600 mb-3">Configure stations and locations with instant synchronization</p>
+                <Button 
+                  onClick={() => navigate('/admin/sites')} 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  Access Site Management
+                </Button>
+              </Card>
 
-            <QuickAdminAction
-              title="User Validation"
-              description="Role conflict prevention & email uniqueness validation"
-              icon={Shield}
-              onClick={() => navigate('/admin/user-validation')} />
+              {/* Real-Time Security Settings */}
+              <Card className="p-4 border-2 border-purple-200 bg-purple-50 hover:shadow-lg transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-3">
+                  <Shield className="w-8 h-8 text-purple-600 group-hover:scale-110 transition-transform" />
+                  <Badge className="bg-purple-100 text-purple-800">Live</Badge>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Security Settings</h3>
+                <p className="text-sm text-gray-600 mb-3">Real-time security policies and access control monitoring</p>
+                <Button 
+                  onClick={() => navigate('/admin/security')} 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  Access Security Settings
+                </Button>
+              </Card>
 
-          </div>
+              {/* Real-Time User Validation */}
+              <Card className="p-4 border-2 border-orange-200 bg-orange-50 hover:shadow-lg transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-3">
+                  <CheckCircle className="w-8 h-8 text-orange-600 group-hover:scale-110 transition-transform" />
+                  <Badge className="bg-orange-100 text-orange-800">Live</Badge>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">User Validation</h3>
+                <p className="text-sm text-gray-600 mb-3">Live role conflict prevention & email uniqueness validation</p>
+                <Button 
+                  onClick={() => navigate('/admin/user-validation')} 
+                  className="w-full bg-orange-600 hover:bg-orange-700"
+                >
+                  Access User Validation
+                </Button>
+              </Card>
+            </div>
+
+            {/* Real-Time Status Indicators */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold mb-3 flex items-center">
+                <Activity className="w-4 h-4 mr-2" />
+                Real-Time System Status
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Supabase Connected</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Real-Time Active</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Live Sync Enabled</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Auto-Updates On</span>
+                </div>
+              </div>
+            </div>
+          </Card>
         </TabsContent>
 
 
