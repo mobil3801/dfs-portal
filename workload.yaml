@@ -1,0 +1,32 @@
+$schema: "https://aka.ms/devbox-workload-schema"
+name: "DFS-Portal Dev Box Workload"
+description: "Customization workload for DFS-Portal project Dev Box environment"
+version: "1.0.0"
+
+customizations:
+  winget:
+    packages:
+      - id: "OpenJS.NodeJS.LTS"
+        version: "18.17.1"
+      - id: "Git.Git"
+        version: "2.41.0"
+
+  git:
+    repositories:
+      - url: "https://github.com/your-org/DFS-Portal.git"
+        branch: "main"
+        path: "C:/Users/DevBoxUser/DFS-Portal"
+
+  powershell:
+    commands:
+      - name: "npm install"
+        script: |
+          cd C:/Users/DevBoxUser/DFS-Portal
+          npm install
+
+      - name: "Additional setup scripts"
+        script: |
+          # Add any additional setup commands here
+          Write-Host "Dev Box setup complete."
+
+# End of workload.yaml
