@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AccessDenied from '@/components/AccessDenied';
 import RealTimeAdminDashboard from '@/components/RealTimeAdminDashboard';
+import { supabase } from '@/lib/supabase';
 
 const AdminStatCard = ({
   title,
@@ -117,18 +118,20 @@ const AdminPanel = () => {
       try {
         setLoading(true);
 
-        // Fetch user profiles count
-        const usersResponse = await window.ezsite.apis.tablePage(11725, {
-          PageNo: 1,
-          PageSize: 1
-        });
+        // Fetch user profiles count using Supabase
+        const { count: totalUsersCount, error: usersError } = await supabase
+          .from('user_profiles')
+          .select('*', { count: 'exact', head: true });
+
+        if (usersError) throw usersError;
 
         // Fetch active users count
-        const activeUsersResponse = await window.ezsite.apis.tablePage(11725, {
-          PageNo: 1,
-          PageSize: 1,
-          Filters: [{ name: "is_active", op: "Equal", value: true }]
-        });
+        const { count: activeUsersCount, error: activeUsersError } = await supabase
+          .from('user_profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true);
+
+        if (activeUsersError) throw activeUsersError;
 
         // Fetch today's audit logs
         const today = new Date();
@@ -136,26 +139,26 @@ const AdminPanel = () => {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const auditResponse = await window.ezsite.apis.tablePage(12706, {
-          PageNo: 1,
-          PageSize: 1,
-          Filters: [
-            { name: "event_timestamp", op: "GreaterThanOrEqual", value: today.toISOString() },
-            { name: "event_timestamp", op: "LessThan", value: tomorrow.toISOString() }
-          ]
-        });
+        const { count: todaysActivityCount, error: todaysAuditError } = await supabase
+          .from('audit_logs')
+          .select('*', { count: 'exact', head: true })
+          .gte('event_timestamp', today.toISOString())
+          .lt('event_timestamp', tomorrow.toISOString());
+
+        if (todaysAuditError) throw todaysAuditError;
 
         // Fetch total audit logs
-        const totalAuditResponse = await window.ezsite.apis.tablePage(12706, {
-          PageNo: 1,
-          PageSize: 1
-        });
+        const { count: totalAuditCount, error: totalAuditError } = await supabase
+          .from('audit_logs')
+          .select('*', { count: 'exact', head: true });
+
+        if (totalAuditError) throw totalAuditError;
 
         setStats({
-          totalUsers: usersResponse.data?.VirtualCount || 0,
-          activeUsers: activeUsersResponse.data?.VirtualCount || 0,
-          totalAuditLogs: totalAuditResponse.data?.VirtualCount || 0,
-          todaysActivity: auditResponse.data?.VirtualCount || 0,
+          totalUsers: totalUsersCount || 0,
+          activeUsers: activeUsersCount || 0,
+          totalAuditLogs: totalAuditCount || 0,
+          todaysActivity: todaysActivityCount || 0,
           systemHealth: 'healthy'
         });
 
@@ -163,8 +166,8 @@ const AdminPanel = () => {
         console.error('Error fetching admin stats:', error);
         setStats((prev) => ({ ...prev, systemHealth: 'error' }));
         toast({
-          title: "Error",
-          description: "Failed to load admin dashboard data",
+          title: "Supabase Connection Error",
+          description: "Failed to load real-time admin dashboard data. Check database connection.",
           variant: "destructive"
         });
       } finally {
@@ -174,8 +177,37 @@ const AdminPanel = () => {
 
     if (isAdmin()) {
       fetchAdminStats();
+      // Set up real-time subscriptions for live stats updates
+      const userProfilesSubscription = supabase
+        .channel('admin_stats_user_profiles')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'user_profiles' }, 
+          () => {
+            console.log('User profiles changed, refreshing stats...');
+            fetchAdminStats();
+          }
+        )
+        .subscribe();
+
+      const auditLogsSubscription = supabase
+        .channel('admin_stats_audit_logs')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'audit_logs' }, 
+          () => {
+            console.log('New audit log entry, refreshing stats...');
+            fetchAdminStats();
+          }
+        )
+        .subscribe();
+
+      // Refresh stats every 2 minutes as backup
       const interval = setInterval(fetchAdminStats, 2 * 60 * 1000);
-      return () => clearInterval(interval);
+      
+      return () => {
+        userProfilesSubscription.unsubscribe();
+        auditLogsSubscription.unsubscribe();
+        clearInterval(interval);
+      };
     }
   }, [isAdmin, toast]);
 
