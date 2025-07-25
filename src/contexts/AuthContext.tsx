@@ -252,7 +252,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       });
 
       if (error) {
-        await auditLogger.logLogin(email, false, undefined, error.message);
+        // Try to log failed login, but don't fail login if audit logging fails
+        try {
+          await auditLogger.logLogin(email, false, undefined, error.message);
+        } catch (auditError) {
+          console.warn('Failed to log login attempt:', auditError);
+        }
         setAuthError(error.message);
         toast({
           title: "Login Failed",
@@ -268,7 +273,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       const userDataResult = await safeFetchUserData(true);
 
       if (userDataResult.success && userDataResult.userData) {
-        await auditLogger.logLogin(email, true, userDataResult.userData.ID);
+        // Try to log successful login, but don't fail login if audit logging fails
+        try {
+          await auditLogger.logLogin(email, true, userDataResult.userData.ID);
+        } catch (auditError) {
+          console.warn('Failed to log successful login:', auditError);
+        }
         toast({
           title: "Login Successful",
           description: "Welcome back!"
@@ -282,7 +292,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       console.error('Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setAuthError(errorMessage);
-      await auditLogger.logLogin(email, false, undefined, errorMessage);
+      // Try to log failed login, but don't fail login if audit logging fails
+      try {
+        await auditLogger.logLogin(email, false, undefined, errorMessage);
+      } catch (auditError) {
+        console.warn('Failed to log login failure:', auditError);
+      }
       toast({
         title: "Login Failed",
         description: errorMessage,
@@ -299,7 +314,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     try {
       // Log logout before clearing user data
       if (user) {
-        await auditLogger.logLogout(user.Email, user.ID);
+        try {
+          await auditLogger.logLogout(user.Email, user.ID);
+        } catch (auditError) {
+          console.warn('Failed to log logout:', auditError);
+        }
       }
 
       await supabase.auth.signOut();
@@ -337,7 +356,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       });
 
       if (error) {
-        await auditLogger.logRegistration(email, false, error.message);
+        try {
+          await auditLogger.logRegistration(email, false, error.message);
+        } catch (auditError) {
+          console.warn('Failed to log registration failure:', auditError);
+        }
         setAuthError(error.message);
         toast({
           title: "Registration Failed",
@@ -347,7 +370,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
         return false;
       }
 
-      await auditLogger.logRegistration(email, true);
+      try {
+        await auditLogger.logRegistration(email, true);
+      } catch (auditError) {
+        console.warn('Failed to log registration success:', auditError);
+      }
       toast({
         title: "Registration Successful",
         description: "Please check your email to verify your account"
@@ -358,7 +385,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
       console.error('Registration error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setAuthError(errorMessage);
-      await auditLogger.logRegistration(email, false, errorMessage);
+      try {
+        await auditLogger.logRegistration(email, false, errorMessage);
+      } catch (auditError) {
+        console.warn('Failed to log registration failure:', auditError);
+      }
       toast({
         title: "Registration Failed",
         description: errorMessage,
