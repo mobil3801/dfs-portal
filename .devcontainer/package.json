@@ -1,17 +1,19 @@
 {
-  "name": "dfs-portal",
+  "name": "supabase-project",
   "version": "1.0.0",
-  "description": "DFS Portal project with TypeScript@next",
-  "main": "index.js",
+  "description": "A project using Supabase",
+  "main": "EasyCode-Sample.js",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "start": "node EasyCode-Sample.js",
+    "dev": "node --watch EasyCode-Sample.js",
+    "test": "node EasyCode-Sample.js"
   },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.4.0-dev.20231201",
-    "vite": "^5.0.0"
-  }
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["supabase", "javascript", "database"],
+  "author": "",
+  "license": "ISC"
 }
