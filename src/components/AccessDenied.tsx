@@ -33,7 +33,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
     hasProfile: !!userProfile,
     currentRole: userProfile?.role || 'No role',
     profileId: userProfile?.ID || 'No ID',
-    isLoading: loading
+    isLoading: isLoading
   };
 
   return (

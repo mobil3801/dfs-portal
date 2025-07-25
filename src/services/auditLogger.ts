@@ -71,7 +71,7 @@ class AuditLoggerService {
     return 'Low';
   }
 
-  // Log an audit event using Supabase
+  // Log an audit event using Supabase with fallback mechanism
   async logEvent(
   eventType: string,
   status: 'Success' | 'Failed' | 'Blocked' | 'Suspicious',
@@ -90,27 +90,84 @@ class AuditLoggerService {
       const timestamp = new Date().toISOString();
       const riskLevel = this.assessRiskLevel(eventType, status, details.additional_data);
 
-      // Use the compatibility function we created
-      const { data, error } = await supabase.rpc('insert_audit_log', {
-        p_event_type: eventType,
-        p_event_status: status,
-        p_action_performed: details.action_performed || 'unknown',
-        p_username: details.username || null,
-        p_user_id: details.user_id || null,
-        p_failure_reason: details.failure_reason || null,
-        p_additional_data: details.additional_data ? JSON.stringify(details.additional_data) : null,
-        p_ip_address: browserInfo.ip_address,
-        p_user_agent: browserInfo.user_agent,
-        p_session_id: browserInfo.session_id
-      });
+      // First try using the RPC function
+      try {
+        const { data, error } = await supabase.rpc('insert_audit_log', {
+          p_event_type: eventType,
+          p_event_status: status,
+          p_action_performed: details.action_performed || 'unknown',
+          p_username: details.username || null,
+          p_user_id: details.user_id || null,
+          p_failure_reason: details.failure_reason || null,
+          p_additional_data: details.additional_data ? JSON.stringify(details.additional_data) : null,
+          p_ip_address: browserInfo.ip_address,
+          p_user_agent: browserInfo.user_agent,
+          p_session_id: browserInfo.session_id
+        });
 
-      if (error) {
-        console.error('Failed to create audit log:', error);
-        // Don't throw error to avoid breaking main functionality
+        if (error) {
+          throw error;
+        }
+        return; // Success, exit early
+      } catch (rpcError) {
+        console.warn('RPC audit logging failed, trying direct insert:', rpcError);
+        
+        // Fallback: Direct table insert
+        const auditEntry = {
+          event_type: eventType,
+          event_status: status,
+          action_performed: details.action_performed || 'unknown',
+          username: details.username || null,
+          user_id: details.user_id || null,
+          failure_reason: details.failure_reason || null,
+          additional_data: details.additional_data || null,
+          ip_address: browserInfo.ip_address,
+          user_agent: browserInfo.user_agent,
+          session_id: browserInfo.session_id,
+          risk_level: riskLevel,
+          resource_accessed: details.resource_accessed || null,
+          station: details.station || null,
+          created_at: timestamp
+        };
+
+        const { error: insertError } = await supabase
+          .from('audit_logs')
+          .insert([auditEntry]);
+
+        if (insertError) {
+          throw insertError;
+        }
       }
     } catch (error) {
-      console.error('Audit logging error:', error);
-      // Silently fail to avoid disrupting user experience
+      // Enhanced error logging with more context
+      const errorDetails = {
+        eventType,
+        status,
+        details,
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : error,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('🔥 Audit logging completely failed:', errorDetails);
+      
+      // Store failed audit logs in localStorage as emergency backup
+      try {
+        const failedLogs = JSON.parse(localStorage.getItem('failed_audit_logs') || '[]');
+        failedLogs.push(errorDetails);
+        // Keep only last 100 failed logs to prevent storage overflow
+        if (failedLogs.length > 100) {
+          failedLogs.splice(0, failedLogs.length - 100);
+        }
+        localStorage.setItem('failed_audit_logs', JSON.stringify(failedLogs));
+      } catch (storageError) {
+        console.error('Failed to store audit log backup:', storageError);
+      }
+      
+      // Don't throw error to avoid breaking main functionality
     }
   }
 
