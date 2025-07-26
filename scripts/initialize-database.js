@@ -1,226 +1,326 @@
+#!/usr/bin/env node
+
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+dotenv.config();
 
-// Load environment variables
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://nehhjsiuhthflfwkfequ.supabase.co';
-const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5laGhqc2l1aHRoZmxmd2tmZXF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzAxMzE3NSwiZXhwIjoyMDY4NTg5MTc1fQ.7naT6l_oNH8VI5MaEKgJ19PoYw1EErv6-ftkEin12wE';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseServiceKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-// Create Supabase client with service role key for admin operations
+if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('❌ Missing Supabase environment variables');
+    process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    }
 });
 
 async function initializeDatabase() {
-  try {
-    console.log('🚀 Starting database initialization...');
-    
-    // Step 1: Create or update module_access table structure
-    console.log('📋 Step 1: Setting up module_access table...');
-    
-    const createTableSQL = `
-      -- Create module_access table if it doesn't exist
-      CREATE TABLE IF NOT EXISTS module_access (
-        id BIGSERIAL PRIMARY KEY,
-        user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-        module_name TEXT NOT NULL,
-        display_name TEXT NOT NULL,
-        access_level TEXT DEFAULT 'read',
-        create_enabled BOOLEAN DEFAULT true,
-        edit_enabled BOOLEAN DEFAULT true,
-        delete_enabled BOOLEAN DEFAULT true,
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        created_by UUID REFERENCES auth.users(id),
-        UNIQUE(user_id, module_name)
-      );
+    console.log('🚀 Initializing DFS Portal Database Schema...');
+    console.log('===========================================\n');
 
-      -- Create indexes for better performance
-      CREATE INDEX IF NOT EXISTS idx_module_access_user_id ON module_access(user_id);
-      CREATE INDEX IF NOT EXISTS idx_module_access_module_name ON module_access(module_name);
-      CREATE INDEX IF NOT EXISTS idx_module_access_active ON module_access(is_active) WHERE is_active = true;
-    `;
+    try {
+        // Read and execute the schema file in smaller chunks
+        const schemaContent = readFileSync('database/init-schema.sql', 'utf8');
+        
+        // Split the schema into logical sections to avoid timeout issues
+        const sections = [
+            // 1. Extensions and Types
+            `-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-    const { error: tableError } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-    if (tableError) {
-      console.log('⚠️  Table creation via RPC failed, trying direct approach...');
-      // Try direct table operations instead
+-- Create custom types for better data integrity
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('admin', 'manager', 'employee', 'viewer');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE station_status AS ENUM ('active', 'inactive', 'maintenance');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE alert_severity AS ENUM ('low', 'medium', 'high', 'critical');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE sms_status AS ENUM ('pending', 'sent', 'failed', 'delivered');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE delivery_status AS ENUM ('scheduled', 'in_transit', 'delivered', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE report_status AS ENUM ('draft', 'submitted', 'approved', 'rejected');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;`,
+
+            // 2. Core Tables Part 1
+            `-- Stations table (Table ID: 12599)
+CREATE TABLE IF NOT EXISTS stations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    station_id VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    station_name VARCHAR(255), -- Alias for compatibility
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip_code VARCHAR(20),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    status station_status DEFAULT 'active',
+    manager_id UUID,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    fuel_types JSONB DEFAULT '[]',
+    pump_count INTEGER DEFAULT 0,
+    active BOOLEAN DEFAULT true,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User profiles table (Table ID: 11725)
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role user_role DEFAULT 'viewer',
+    permissions JSONB DEFAULT '{}',
+    station_access JSONB DEFAULT '[]',
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP WITH TIME ZONE,
+    phone VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);`,
+
+            // 3. Core Tables Part 2
+            `-- Employees table (Table ID: 11727)
+CREATE TABLE IF NOT EXISTS employees (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id VARCHAR(50) UNIQUE NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(20),
+    position VARCHAR(100),
+    department VARCHAR(100),
+    station_id UUID REFERENCES stations(id),
+    hire_date DATE,
+    termination_date DATE,
+    salary DECIMAL(10, 2),
+    hourly_rate DECIMAL(8, 2),
+    is_active BOOLEAN DEFAULT true,
+    emergency_contact JSONB DEFAULT '{}',
+    notes TEXT,
+    created_by UUID REFERENCES auth.users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Products table (Table ID: 11726)
+CREATE TABLE IF NOT EXISTS public.products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_id VARCHAR(50) UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    barcode VARCHAR(100),
+    price DECIMAL(10, 2),
+    cost DECIMAL(10, 2),
+    category_id UUID,
+    brand_id UUID,
+    unit VARCHAR(50),
+    stock_quantity INTEGER DEFAULT 0,
+    min_stock_level INTEGER DEFAULT 0,
+    max_stock_level INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    station_id UUID REFERENCES stations(id),
+    created_by UUID REFERENCES auth.users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);`,
+
+            // 4. Continue with remaining tables...
+            `-- Sales reports table (Table ID: 12356)
+CREATE TABLE IF NOT EXISTS public.sales_reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id VARCHAR(50) UNIQUE,
+    station_id UUID REFERENCES stations(id),
+    report_date DATE NOT NULL,
+    shift VARCHAR(50),
+    total_sales DECIMAL(12, 2),
+    fuel_sales DECIMAL(12, 2),
+    non_fuel_sales DECIMAL(12, 2),
+    cash_sales DECIMAL(12, 2),
+    card_sales DECIMAL(12, 2),
+    fuel_volume DECIMAL(10, 2),
+    transaction_count INTEGER DEFAULT 0,
+    report_data JSONB,
+    status report_status DEFAULT 'draft',
+    created_by UUID REFERENCES auth.users(id),
+    approved_by UUID REFERENCES auth.users(id),
+    approved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Deliveries table (Table ID: 12196)
+CREATE TABLE IF NOT EXISTS public.deliveries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_id VARCHAR(50) UNIQUE,
+    station_id UUID REFERENCES stations(id),
+    supplier_id UUID,
+    delivery_date DATE NOT NULL,
+    expected_time TIME,
+    actual_time TIME,
+    fuel_type VARCHAR(50),
+    quantity_ordered DECIMAL(10, 2),
+    quantity_delivered DECIMAL(10, 2),
+    price_per_gallon DECIMAL(10, 4),
+    total_cost DECIMAL(12, 2),
+    driver_name VARCHAR(255),
+    truck_number VARCHAR(100),
+    delivery_notes TEXT,
+    status delivery_status DEFAULT 'scheduled',
+    created_by UUID REFERENCES auth.users(id),
+    received_by UUID REFERENCES auth.users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Module access table (Table ID: 25712)
+CREATE TABLE IF NOT EXISTS public.module_access (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id),
+    module_name VARCHAR(100) NOT NULL,
+    permissions JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    granted_by UUID REFERENCES auth.users(id),
+    granted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);`
+        ];
+
+        let sectionNumber = 1;
+        for (const section of sections) {
+            console.log(`📊 Executing Section ${sectionNumber}/${sections.length}...`);
+            
+            const { error } = await supabase.rpc('exec_sql', { sql: section });
+            
+            if (error) {
+                console.error(`❌ Section ${sectionNumber} failed:`, error.message);
+                // Continue with other sections
+            } else {
+                console.log(`✅ Section ${sectionNumber} completed successfully`);
+            }
+            sectionNumber++;
+        }
+
+        // Try to execute remaining parts of the schema
+        console.log('\n📊 Creating audit_logs table...');
+        const auditLogsSQL = `
+-- Audit logs table (Table ID: 12706)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id),
+    user_email VARCHAR(255),
+    action VARCHAR(100) NOT NULL,
+    action_performed VARCHAR(255),
+    event_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    table_name VARCHAR(100),
+    record_id VARCHAR(100),
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    session_id VARCHAR(255),
+    severity alert_severity DEFAULT 'low',
+    success BOOLEAN DEFAULT true,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);`;
+
+        const { error: auditError } = await supabase.rpc('exec_sql', { sql: auditLogsSQL });
+        if (auditError) {
+            console.error('❌ audit_logs creation failed:', auditError.message);
+        } else {
+            console.log('✅ audit_logs table created');
+        }
+
+        // Enable RLS on critical tables
+        console.log('\n🔒 Enabling Row Level Security...');
+        const rlsSQL = `
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE deliveries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE module_access ENABLE ROW LEVEL SECURITY;
+
+-- Basic RLS policies
+CREATE POLICY IF NOT EXISTS "Users can view own profile" ON user_profiles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = user_id);
+`;
+
+        const { error: rlsError } = await supabase.rpc('exec_sql', { sql: rlsSQL });
+        if (rlsError) {
+            console.error('⚠️  RLS setup had issues:', rlsError.message);
+        } else {
+            console.log('✅ RLS policies created');
+        }
+
+        // Verify tables were created
+        console.log('\n🔍 Verifying table creation...');
+        const { data: tables, error: tablesError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .in('table_name', ['user_profiles', 'stations', 'products', 'sales_reports', 'deliveries', 'module_access']);
+
+        if (tablesError) {
+            console.error('❌ Table verification failed:', tablesError.message);
+        } else {
+            console.log('✅ Tables verified:', tables.map(t => t.table_name).join(', '));
+        }
+
+        console.log('\n🎉 Database schema initialization completed!');
+        console.log('Ready to create admin user...');
+
+    } catch (error) {
+        console.error('💥 Database initialization failed:', error.message);
+        console.error(error.stack);
     }
-
-    // Step 2: Drop existing RLS policies to avoid conflicts
-    console.log('🔒 Step 2: Resetting RLS policies...');
-    
-    const dropPoliciesSQL = `
-      -- Drop existing policies
-      DROP POLICY IF EXISTS "Users can view module access" ON module_access;
-      DROP POLICY IF EXISTS "Admins can manage module access" ON module_access;
-      DROP POLICY IF EXISTS "Service role full access" ON module_access;
-      DROP POLICY IF EXISTS "Allow service role full access" ON module_access;
-      DROP POLICY IF EXISTS "Users can view their own module access" ON module_access;
-      DROP POLICY IF EXISTS "System can create default modules" ON module_access;
-    `;
-
-    const { error: dropError } = await supabase.rpc('exec_sql', { sql: dropPoliciesSQL });
-    if (dropError) {
-      console.log('⚠️  Policy drop via RPC failed, continuing...');
-    }
-
-    // Step 3: Create new simplified RLS policies
-    console.log('🛡️  Step 3: Creating new RLS policies...');
-    
-    const createPoliciesSQL = `
-      -- Enable RLS
-      ALTER TABLE module_access ENABLE ROW LEVEL SECURITY;
-
-      -- Policy 1: Service role has full access (for system operations)
-      CREATE POLICY "service_role_full_access" ON module_access
-        FOR ALL
-        TO service_role
-        USING (true)
-        WITH CHECK (true);
-
-      -- Policy 2: Authenticated users can view their own module access
-      CREATE POLICY "users_view_own_modules" ON module_access
-        FOR SELECT
-        TO authenticated
-        USING (user_id = auth.uid() OR user_id IS NULL);
-
-      -- Policy 3: System can create default modules (no user_id)
-      CREATE POLICY "system_create_default_modules" ON module_access
-        FOR INSERT
-        TO authenticated, anon
-        WITH CHECK (user_id IS NULL);
-
-      -- Policy 4: Users can update their own module access
-      CREATE POLICY "users_update_own_modules" ON module_access
-        FOR UPDATE
-        TO authenticated
-        USING (user_id = auth.uid())
-        WITH CHECK (user_id = auth.uid());
-    `;
-
-    const { error: policyError } = await supabase.rpc('exec_sql', { sql: createPoliciesSQL });
-    if (policyError) {
-      console.log('⚠️  Policy creation via RPC failed, trying alternative...');
-    }
-
-    // Step 4: Grant necessary permissions
-    console.log('🔑 Step 4: Granting permissions...');
-    
-    const grantPermissionsSQL = `
-      -- Grant permissions to service role
-      GRANT ALL ON module_access TO service_role;
-      GRANT ALL ON SEQUENCE module_access_id_seq TO service_role;
-      
-      -- Grant permissions to authenticated users
-      GRANT SELECT, INSERT, UPDATE ON module_access TO authenticated;
-      GRANT USAGE ON SEQUENCE module_access_id_seq TO authenticated;
-      
-      -- Grant permissions to anon users for default module creation
-      GRANT SELECT, INSERT ON module_access TO anon;
-      GRANT USAGE ON SEQUENCE module_access_id_seq TO anon;
-    `;
-
-    const { error: grantError } = await supabase.rpc('exec_sql', { sql: grantPermissionsSQL });
-    if (grantError) {
-      console.log('⚠️  Permission grants via RPC failed, continuing...');
-    }
-
-    // Step 5: Create default modules using service role
-    console.log('📦 Step 5: Creating default modules...');
-    
-    const defaultModules = [
-      { module_name: 'products', display_name: 'Products' },
-      { module_name: 'employees', display_name: 'Employees' },
-      { module_name: 'sales', display_name: 'Sales Reports' },
-      { module_name: 'vendors', display_name: 'Vendors' },
-      { module_name: 'orders', display_name: 'Orders' },
-      { module_name: 'licenses', display_name: 'Licenses & Certificates' },
-      { module_name: 'salary', display_name: 'Salary Records' },
-      { module_name: 'delivery', display_name: 'Delivery Records' },
-      { module_name: 'admin', display_name: 'Administration' }
-    ];
-
-    // First, clear existing default modules
-    const { error: clearError } = await supabase
-      .from('module_access')
-      .delete()
-      .is('user_id', null);
-
-    if (clearError) {
-      console.log('⚠️  Could not clear existing default modules:', clearError.message);
-    }
-
-    // Insert default modules one by one
-    for (const module of defaultModules) {
-      const { error: insertError } = await supabase
-        .from('module_access')
-        .insert({
-          user_id: null, // System-wide default
-          module_name: module.module_name,
-          display_name: module.display_name,
-          access_level: 'full',
-          create_enabled: true,
-          edit_enabled: true,
-          delete_enabled: true,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (insertError) {
-        console.log(`⚠️  Failed to create module ${module.module_name}:`, insertError.message);
-      } else {
-        console.log(`✅ Created default module: ${module.display_name}`);
-      }
-    }
-
-    // Step 6: Verify the setup
-    console.log('🔍 Step 6: Verifying setup...');
-    
-    const { data: modules, error: verifyError } = await supabase
-      .from('module_access')
-      .select('*')
-      .is('user_id', null);
-
-    if (verifyError) {
-      console.log('❌ Verification failed:', verifyError.message);
-    } else {
-      console.log(`✅ Successfully created ${modules?.length || 0} default modules`);
-      modules?.forEach(module => {
-        console.log(`   - ${module.display_name} (${module.module_name})`);
-      });
-    }
-
-    console.log('🎉 Database initialization completed successfully!');
-    console.log('');
-    console.log('📋 Summary:');
-    console.log('   ✅ module_access table structure updated');
-    console.log('   ✅ RLS policies configured');
-    console.log('   ✅ Permissions granted');
-    console.log('   ✅ Default modules created');
-    console.log('');
-    console.log('🚀 The application should now work without permission errors!');
-
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error);
-    console.log('');
-    console.log('🔧 Manual steps required:');
-    console.log('   1. Open your Supabase dashboard');
-    console.log('   2. Go to SQL Editor');
-    console.log('   3. Run the SQL commands manually');
-    console.log('   4. Check the RLS policies in the Authentication section');
-    process.exit(1);
-  }
 }
 
-// Run the initialization
-initializeDatabase();
+// Execute if this script is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+    initializeDatabase().then(() => {
+        console.log('\n🏁 Database initialization process complete.');
+    }).catch(error => {
+        console.error('💥 Process failed:', error.message);
+        process.exit(1);
+    });
+}
+
+export { initializeDatabase };
