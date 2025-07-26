@@ -25,6 +25,7 @@ import SimpleRoleAssignment from '@/components/SimpleRoleAssignment';
 import BulkRoleManager from '@/components/BulkRoleManager';
 import RoleOverview from '@/components/RoleOverview';
 import { supabase } from '@/lib/supabase';
+import { safeToLowerCase, safeString, errorLog, debugLog } from '@/utils/safe-string-utils';
 import {
   Users,
   Plus,
@@ -466,44 +467,53 @@ const fetchStations = async () => {
   };
 
   const filteredProfiles = userProfiles.filter((profile) => {
-    // Enhanced helper function to safely convert to string and handle all edge cases
-    const safeString = (value: any): string => {
-      if (value === null || value === undefined || value === '') return '';
-      if (typeof value === 'string') return value;
-      if (typeof value === 'number') return String(value);
-      if (typeof value === 'boolean') return String(value);
-      if (Array.isArray(value)) return value.join(', ');
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
-    };
+    try {
+      // DIAGNOSTIC: Log profile data to identify null/undefined fields
+      debugLog('UserManagement Filter Profile', {
+        profile,
+        employee_id: profile?.employee_id,
+        phone: profile?.phone,
+        role: profile?.role,
+        employee_id_type: typeof profile?.employee_id,
+        phone_type: typeof profile?.phone,
+        role_type: typeof profile?.role
+      });
 
-    // Safe toLowerCase function that handles undefined/null values
-    const safeToLowerCase = (value: any): string => {
-      const str = safeString(value);
-      return str ? str.toLowerCase() : '';
-    };
+      // Safe search term handling
+      const searchTermLower = safeToLowerCase(searchTerm);
 
-    // Safe search term handling
-    const searchTermLower = searchTerm ? searchTerm.toLowerCase() : '';
+      // Add null checks for profile object itself
+      if (!profile) {
+        errorLog('UserManagement Filter', 'Profile is null/undefined', { profile });
+        return false;
+      }
 
-    // Add null checks for profile object itself
-    if (!profile) return false;
+      // DIAGNOSTIC: Verify safeToLowerCase is working
+      debugLog('UserManagement Filter Safe Calls', {
+        employee_id_safe: safeToLowerCase(profile.employee_id),
+        phone_safe: safeToLowerCase(profile.phone),
+        role_safe: safeToLowerCase(profile.role)
+      });
 
-    const matchesSearch = !searchTermLower || (
-      safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
-      safeToLowerCase(profile.phone).includes(searchTermLower) ||
-      safeToLowerCase(profile.role).includes(searchTermLower)
-    );
-    
-    const matchesRole = selectedRole === 'All' || safeToLowerCase(profile.role) === safeToLowerCase(selectedRole);
-    
-    // Safe station filtering with null checks
-    const matchesStation = selectedStation === 'All' || 
-      (Array.isArray(profile.station_access) && profile.station_access.some(station => 
-        safeToLowerCase(station).includes(safeToLowerCase(selectedStation))
-      ));
+      const matchesSearch = !searchTermLower || (
+        safeToLowerCase(profile.employee_id).includes(searchTermLower) ||
+        safeToLowerCase(profile.phone).includes(searchTermLower) ||
+        safeToLowerCase(profile.role).includes(searchTermLower)
+      );
+      
+      const matchesRole = selectedRole === 'All' || safeToLowerCase(profile.role) === safeToLowerCase(selectedRole);
+      
+      // Safe station filtering with null checks
+      const matchesStation = selectedStation === 'All' ||
+        (Array.isArray(profile.station_access) && profile.station_access.some(station =>
+          safeToLowerCase(station).includes(safeToLowerCase(selectedStation))
+        ));
 
-    return matchesSearch && matchesRole && matchesStation;
+      return matchesSearch && matchesRole && matchesStation;
+    } catch (error) {
+      errorLog('UserManagement Filter', 'Failed to process profile', { profile, error });
+      return false; // Fail safe - exclude problematic profiles
+    }
   });
 
   const getRoleBadgeColor = (role: string) => {

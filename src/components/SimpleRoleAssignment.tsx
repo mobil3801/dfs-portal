@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { safeToLowerCase } from '@/utils/safe-string-utils';
 import {
   Users,
   Shield,
@@ -346,9 +347,9 @@ const SimpleRoleAssignment: React.FC<SimpleRoleAssignmentProps> = ({
   };
 
   const filteredUsers = users.filter((user) =>
-  user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  safeToLowerCase(user.employee_id).includes(safeToLowerCase(searchTerm)) ||
+  safeToLowerCase(user.phone).includes(safeToLowerCase(searchTerm)) ||
+  safeToLowerCase(user.role).includes(safeToLowerCase(searchTerm))
   );
 
   const defaultTrigger =

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { safeToLowerCase } from '@/utils/safe-string-utils';
 import {
   Shield,
   Users,
@@ -631,9 +632,9 @@ const ComprehensivePermissionDialog: React.FC<ComprehensivePermissionDialogProps
 
   const filteredUsers = userProfiles.filter((user) => {
     const matchesSearch =
-    user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase());
+    safeToLowerCase(user.employee_id).includes(safeToLowerCase(searchTerm)) ||
+    safeToLowerCase(user.phone).includes(safeToLowerCase(searchTerm)) ||
+    safeToLowerCase(user.role).includes(safeToLowerCase(searchTerm));
     const matchesRole = selectedRole === 'All' || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });

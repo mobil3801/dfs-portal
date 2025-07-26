@@ -350,6 +350,11 @@ const AppRouter = () => {
                 <UserManagement />
               </Suspense>
             } />
+            <Route path="admin/user-management" element={
+            <Suspense fallback={<PageLoader />}>
+                <UserManagement />
+              </Suspense>
+            } />
             <Route path="admin/sites" element={
             <Suspense fallback={<PageLoader />}>
                 <SiteManagement />

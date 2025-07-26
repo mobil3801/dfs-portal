@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { safeToLowerCase } from '@/utils/safe-string-utils';
 import {
   Users,
   Shield,
@@ -99,8 +100,8 @@ const BulkRoleManager: React.FC<BulkRoleManagerProps> = ({
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-    user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.toLowerCase().includes(searchTerm.toLowerCase());
+    safeToLowerCase(user.employee_id).includes(safeToLowerCase(searchTerm)) ||
+    safeToLowerCase(user.phone).includes(safeToLowerCase(searchTerm));
     const matchesStation = stationFilter === 'All' || user.station === stationFilter;
     const matchesRole = roleFilter === 'All' || user.role === roleFilter;
 
