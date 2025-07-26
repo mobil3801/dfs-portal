@@ -84,7 +84,7 @@ async function debugAuthIssues() {
                     console.log(`      Name: ${user.full_name}`);
                     console.log(`      Role: ${user.role}`);
                     console.log(`      Active: ${user.is_active}`);
-                    console.log(`      Auth ID: ${user.auth_user_id || 'NULL'}`);
+                    console.log(`      Auth ID: ${user.user_id || 'NULL'}`);
                     console.log('      ---');
                 });
             }
@@ -166,7 +166,7 @@ async function debugAuthIssues() {
             // We can't test password directly, but we can check if user can sign in
             const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
                 email: adminEmail,
-                password: 'admin123'
+                password: 'DFS@Admin2024!'
             });
             
             if (signInError) {
