@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdapter } from '@/services/supabase/supabaseAdapter';
 import AuditLoggerService from '@/services/auditLogger';
+import { safeToLowerCase, errorLog } from '@/utils/safe-string-utils';
 
 const auditLogger = AuditLoggerService.getInstance();
 
@@ -475,7 +476,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     const profileRole = userProfile.role;
 
     // Normalize roles for comparison (handle both lowercase and capitalized variants)
-    const normalizeRole = (role: string) => role?.toLowerCase().trim();
+    const normalizeRole = (role: string) => safeToLowerCase(role).trim();
     const normalizedRoleToCheck = normalizeRole(roleToCheck);
     
     const authRoleMatches = normalizeRole(authMetadataRole) === normalizedRoleToCheck;

@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   ClipboardList } from
 'lucide-react';
+import { safeToLowerCase, safeString, debugLog, errorLog } from '@/utils/safe-string-utils';
 
 // Navigation Link Component (moved outside parent)
 interface NavigationLinkProps {
@@ -97,10 +98,10 @@ const NavigationLink: React.FC<NavigationLinkProps> = ({
     <button
       onClick={handleClick}
       className={`${baseClasses} ${activeClasses}`}
-      data-testid={`nav-${item.name.toLowerCase()}`}
+      data-testid={`nav-${safeToLowerCase(item.name)}`}
     >
       <Icon className="h-4 w-4 flex-shrink-0" />
-      <span className="ml-2">{item.name}</span>
+      <span className="ml-2">{safeString(item.name)}</span>
     </button>
   );
 };
@@ -166,7 +167,7 @@ const TopNavigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
-  // Debug logging
+  // Debug logging with error monitoring
   useEffect(() => {
     if (debugMode) {
       let userRole = 'None';
@@ -180,12 +181,14 @@ const TopNavigation = () => {
         }
       }
       
-      console.log('TopNavigation Debug:', {
+      debugLog('TopNavigation', {
         isAuthenticated,
         isLoading,
         isInitialized,
         user: user?.Name,
-        userRole
+        userRole,
+        primaryItems: accessiblePrimaryItems.length,
+        secondaryItems: accessibleSecondaryItems.length
       });
     }
   }, [isAuthenticated, isLoading, isInitialized, user, isAdmin, isManager, debugMode]);
@@ -298,29 +301,38 @@ const TopNavigation = () => {
     return location.pathname.startsWith(href);
   };
 
-  // Enhanced role checking with better fallbacks
+  // Enhanced role checking with better fallbacks and safe string operations
   const canAccessRoute = (requiredRole: string | null) => {
-    // Allow access if no role is required
-    if (!requiredRole) {
-      return true;
-    }
+    try {
+      // Allow access if no role is required
+      if (!requiredRole) {
+        return true;
+      }
 
-    // Ensure user is authenticated
-    if (!isAuthenticated) {
+      // Ensure user is authenticated
+      if (!isAuthenticated) {
+        return false;
+      }
+
+      // Safe role comparison using safeToLowerCase
+      const roleToCheck = safeToLowerCase(requiredRole);
+      
+      // Check specific roles (case-insensitive comparison)
+      if (roleToCheck === 'admin') {
+        return isAdmin();
+      }
+      
+      if (roleToCheck === 'manager') {
+        return isManager();
+      }
+
+      // Default to allowing access for authenticated users
+      return true;
+    } catch (error) {
+      errorLog('TopNavigation.canAccessRoute', error, { requiredRole, isAuthenticated });
+      // Fail safely - deny access if there's an error
       return false;
     }
-
-    // Check specific roles (case-insensitive comparison)
-    if (requiredRole.toLowerCase() === 'admin') {
-      return isAdmin();
-    }
-    
-    if (requiredRole.toLowerCase() === 'manager') {
-      return isManager();
-    }
-
-    // Default to allowing access for authenticated users
-    return true;
   };
 
   // Get accessible items for debugging
