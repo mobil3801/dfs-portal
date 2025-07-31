@@ -172,7 +172,11 @@ const SalesChart: React.FC = () => {
         <div className="bg-white p-3 border rounded-lg shadow-lg">
           <p className="font-semibold">{formatDate(label)}</p>
           {payload.map((entry: any, index: number) =>
-          <p key={index} style={{ color: entry.color }}>
+          <p
+            key={index}
+            className="tooltip-entry"
+            style={{ '--entry-color': entry.color } as React.CSSProperties}
+          >
               {entry.name}: {formatCurrency(entry.value)}
             </p>
           )}

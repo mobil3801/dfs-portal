@@ -1147,12 +1147,10 @@ const fetchStations = async () => {
 
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="edit_is_active"
                     checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
-
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked as boolean })} />
                   <Label htmlFor="edit_is_active">Active User</Label>
                 </div>
                 <Button onClick={handleUpdateProfile} className="w-full">
