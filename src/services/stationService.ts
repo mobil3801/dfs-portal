@@ -294,17 +294,26 @@ class StationService {
    */
   async addStation(stationData: Omit<Station, 'id'>): Promise<{success: boolean;error?: string;}> {
     try {
+      console.log('[STATION-SERVICE-DEBUG] Adding station:', {
+        stationName: stationData.station_name,
+        cacheSize: this.stationsCache.length,
+        timestamp: new Date().toISOString()
+      });
+
       const { error } = await window.ezsite.apis.tableCreate(12599, stationData);
 
       if (error) {
+        console.error('[STATION-SERVICE-DEBUG] Add station failed:', error);
         return { success: false, error };
       }
 
       // Clear cache to force refresh
       this.clearCache();
+      console.log('[STATION-SERVICE-DEBUG] Cache cleared after adding station');
 
       return { success: true };
     } catch (error) {
+      console.error('[STATION-SERVICE-DEBUG] Add station error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -314,17 +323,27 @@ class StationService {
    */
   async updateStation(stationData: Station): Promise<{success: boolean;error?: string;}> {
     try {
+      console.log('[STATION-SERVICE-DEBUG] Updating station:', {
+        stationId: stationData.id,
+        stationName: stationData.station_name,
+        cacheSize: this.stationsCache.length,
+        timestamp: new Date().toISOString()
+      });
+
       const { error } = await window.ezsite.apis.tableUpdate(12599, stationData);
 
       if (error) {
+        console.error('[STATION-SERVICE-DEBUG] Update station failed:', error);
         return { success: false, error };
       }
 
       // Clear cache to force refresh
       this.clearCache();
+      console.log('[STATION-SERVICE-DEBUG] Cache cleared after updating station');
 
       return { success: true };
     } catch (error) {
+      console.error('[STATION-SERVICE-DEBUG] Update station error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -334,17 +353,26 @@ class StationService {
    */
   async deleteStation(stationId: number): Promise<{success: boolean;error?: string;}> {
     try {
+      console.log('[STATION-SERVICE-DEBUG] Deleting station:', {
+        stationId,
+        cacheSize: this.stationsCache.length,
+        timestamp: new Date().toISOString()
+      });
+
       const { error } = await window.ezsite.apis.tableDelete(12599, { id: stationId });
 
       if (error) {
+        console.error('[STATION-SERVICE-DEBUG] Delete station failed:', error);
         return { success: false, error };
       }
 
       // Clear cache to force refresh
       this.clearCache();
+      console.log('[STATION-SERVICE-DEBUG] Cache cleared after deleting station');
 
       return { success: true };
     } catch (error) {
+      console.error('[STATION-SERVICE-DEBUG] Delete station error:', error);
       return { success: false, error: String(error) };
     }
   }

@@ -36,6 +36,11 @@ const subscribe = (callback: StoreSubscriber): (() => void) => {
  * Notify all subscribers of store changes
  */
 const notifySubscribers = () => {
+  console.log('[STATION-STORE-DEBUG] Notifying subscribers:', {
+    subscriberCount: subscribers.size,
+    stationCount: globalStationStore.stations.length,
+    timestamp: new Date().toISOString()
+  });
   subscribers.forEach((callback) => callback(globalStationStore));
 };
 

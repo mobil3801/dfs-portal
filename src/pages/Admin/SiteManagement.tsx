@@ -122,22 +122,33 @@ const SiteManagement: React.FC = () => {
 
   // Set up real-time subscription for stations
   useEffect(() => {
+    console.log('[SUPABASE-RT-DEBUG] Setting up real-time subscription for stations');
+    
     // Set up Supabase real-time subscription for stations
     const subscription = supabase
       .channel('stations_changes')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'stations' 
-        }, 
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stations'
+        },
         (payload) => {
-          console.log('Real-time station change detected:', payload);
+          console.log('[SUPABASE-RT-DEBUG] Real-time station change detected:', {
+            eventType: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            new: payload.new,
+            old: payload.old,
+            timestamp: new Date().toISOString()
+          });
+          
           setRealTimeConnected(true);
           setLastSyncTime(new Date().toLocaleTimeString());
           
           // Handle different types of changes
           if (payload.eventType === 'INSERT') {
+            console.log('[SUPABASE-RT-DEBUG] Handling INSERT event for station:', payload.new?.station_name);
             toast({
               title: "New Station Added",
               description: `Station ${payload.new.station_name} was added in real-time`
@@ -145,12 +156,14 @@ const SiteManagement: React.FC = () => {
             // Reload stations to get updated data
             reloadStations();
           } else if (payload.eventType === 'UPDATE') {
+            console.log('[SUPABASE-RT-DEBUG] Handling UPDATE event for station:', payload.new?.station_name);
             toast({
               title: "Station Updated",
               description: `Station ${payload.new.station_name} was updated in real-time`
             });
             reloadStations();
           } else if (payload.eventType === 'DELETE') {
+            console.log('[SUPABASE-RT-DEBUG] Handling DELETE event for station:', payload.old?.station_name);
             toast({
               title: "Station Removed",
               description: `Station was removed in real-time`
@@ -160,24 +173,35 @@ const SiteManagement: React.FC = () => {
         }
       )
       .subscribe((status) => {
+        console.log('[SUPABASE-RT-DEBUG] Subscription status changed:', {
+          status,
+          timestamp: new Date().toISOString()
+        });
+        
         if (status === 'SUBSCRIBED') {
           setRealTimeConnected(true);
           setLastSyncTime(new Date().toLocaleTimeString());
+          console.log('[SUPABASE-RT-DEBUG] Successfully connected to real-time updates');
           toast({
             title: "Real-Time Connected",
             description: "Live station data synchronization is now active"
           });
         } else if (status === 'CHANNEL_ERROR') {
           setRealTimeConnected(false);
+          console.error('[SUPABASE-RT-DEBUG] Real-time connection error');
           toast({
             title: "Connection Error",
             description: "Real-time connection failed",
             variant: "destructive"
           });
+        } else if (status === 'CLOSED') {
+          setRealTimeConnected(false);
+          console.log('[SUPABASE-RT-DEBUG] Real-time connection closed');
         }
       });
 
     return () => {
+      console.log('[SUPABASE-RT-DEBUG] Cleaning up real-time subscription');
       subscription.unsubscribe();
     };
   }, [reloadStations, toast]);
