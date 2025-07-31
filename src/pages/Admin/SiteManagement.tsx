@@ -909,16 +909,6 @@ const SiteManagement: React.FC = () => {
       <EnhancedStationFormDialog
         open={stationFormDialogOpen}
         onOpenChange={setStationFormDialogOpen}
-        station={editingStation}
-        onSave={handleStationSaved}
-        mode={dialogMode}
-      />
-
-
-      {/* Enhanced Station Form Dialog */}
-      <EnhancedStationFormDialog
-        open={stationFormDialogOpen}
-        onOpenChange={setStationFormDialogOpen}
         mode={dialogMode}
         station={editingStation}
         onSuccess={(station) => {
