@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { FileText, Save, ArrowLeft, Upload, FileIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useStationStore } from '@/hooks/use-station-store';
 import EnhancedFileUpload from '@/components/EnhancedFileUpload';
 
 interface LicenseFormData {
@@ -41,7 +42,10 @@ const LicenseForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN', 'ALL'];
+  // Get station options from centralized store
+  const { getFilteredStationOptions } = useStationStore();
+  const stationOptions = getFilteredStationOptions(true); // Include ALL option for licenses
+  const stations = stationOptions.map(opt => opt.value);
   const categories = ['Business', 'Environmental', 'Safety', 'Health', 'Fire', 'Building', 'Other'];
   const statuses = ['Active', 'Expired', 'Pending Renewal'];
 

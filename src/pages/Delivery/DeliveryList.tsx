@@ -42,7 +42,10 @@ const DeliveryList: React.FC = () => {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const pageSize = 10;
 
-  const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  // Get station options from centralized store
+  const { getFilteredStationOptions } = useStationStore();
+  const stationOptions = getFilteredStationOptions(false); // Don't include ALL for this filter
+  const stations = stationOptions.map(opt => opt.value);
 
   useEffect(() => {
     loadDeliveries();

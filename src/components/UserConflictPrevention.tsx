@@ -18,6 +18,7 @@ import {
   Search } from
 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import { useDebounce } from '@/hooks/use-debounce';
 
 interface ValidationResult {
@@ -46,10 +47,11 @@ const UserConflictPrevention: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [existingUsers, setExistingUsers] = useState<UserProfile[]>([]);
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
 
   const debouncedEmail = useDebounce(emailToCheck, 500);
   const roles = ['Administrator', 'Management', 'Employee'];
-  const stations = ['ALL', 'MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  const stationOptions = getFilteredStationOptions(true);
 
   useEffect(() => {
     loadExistingUsers();
@@ -430,7 +432,7 @@ const UserConflictPrevention: React.FC = () => {
                       <SelectValue placeholder="Select station..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {stations.map((station) => <SelectItem key={station} value={station}>{station}</SelectItem>)}
+                      {stationOptions.map((station) => <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

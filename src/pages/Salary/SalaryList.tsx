@@ -72,7 +72,7 @@ const SalaryList: React.FC = () => {
   const { userProfile, isAdmin } = useAuth();
   
   // Use central station store for real-time updates
-  const { stations: storeStations, loading: stationsLoading, getStationColor } = useStationStore();
+  const { stations: storeStations, loading: stationsLoading, getStationColor, getFilteredStationOptions } = useStationStore();
 
   const SALARY_TABLE_ID = '11788';
   const EMPLOYEES_TABLE_ID = '11727';
@@ -176,9 +176,11 @@ const SalaryList: React.FC = () => {
 
   const getEmployeesByStation = (stationId: string) => {
     if (stationId === 'MANAGER') {
+      // Get all known station values from the centralized store
+      const knownStations = getFilteredStationOptions(false).map(station => station.value);
       return employees.filter((emp) =>
       emp.station &&
-      !['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'].includes(emp.station)
+      !knownStations.includes(emp.station)
       );
     }
     return employees.filter((emp) => emp.station === stationId);

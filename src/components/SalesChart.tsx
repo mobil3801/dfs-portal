@@ -7,16 +7,8 @@ import { useStationStore } from '@/hooks/use-station-store';
 interface SalesData {
   date: string;
   day: string;
-  MOBIL_fuel: number;
-  MOBIL_convenience: number;
-  MOBIL_total: number;
-  AMOCO_ROSEDALE_fuel: number;
-  AMOCO_ROSEDALE_convenience: number;
-  AMOCO_ROSEDALE_total: number;
-  AMOCO_BROOKLYN_fuel: number;
-  AMOCO_BROOKLYN_convenience: number;
-  AMOCO_BROOKLYN_total: number;
   total_all_stations: number;
+  [key: string]: string | number; // Dynamic station data
 }
 
 interface StationTotals {
@@ -27,11 +19,14 @@ interface StationTotals {
 }
 
 const SalesChart: React.FC = () => {
-  const { stations } = useStationStore();
+  const { stations, getStationColor } = useStationStore();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [stationTotals, setStationTotals] = useState<StationTotals[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get station names dynamically
+  const stationNames = stations.map(station => station.name || station.station_name).filter(Boolean);
 
   useEffect(() => {
     loadSalesData();
@@ -76,8 +71,8 @@ const SalesChart: React.FC = () => {
       const dailyData: {[key: string]: any;} = {};
       // Initialize station summary dynamically from central store
       const stationSummary: {[key: string]: {fuel: number;convenience: number;total: number;};} = {};
-      stations.forEach(station => {
-        stationSummary[station.name] = { fuel: 0, convenience: 0, total: 0 };
+      stationNames.forEach(stationName => {
+        stationSummary[stationName] = { fuel: 0, convenience: 0, total: 0 };
       });
 
       // Process each report
@@ -88,39 +83,32 @@ const SalesChart: React.FC = () => {
         const station = report.station || 'Unknown';
 
         if (!dailyData[dateStr]) {
+          // Initialize daily data with dynamic station fields
           dailyData[dateStr] = {
             date: dateStr,
             day: dayName,
-            MOBIL_fuel: 0,
-            MOBIL_convenience: 0,
-            MOBIL_total: 0,
-            AMOCO_ROSEDALE_fuel: 0,
-            AMOCO_ROSEDALE_convenience: 0,
-            AMOCO_ROSEDALE_total: 0,
-            AMOCO_BROOKLYN_fuel: 0,
-            AMOCO_BROOKLYN_convenience: 0,
-            AMOCO_BROOKLYN_total: 0,
             total_all_stations: 0
           };
+          
+          // Add dynamic station fields
+          stationNames.forEach(stationName => {
+            const stationKey = stationName.replace(/\s+/g, '_').toUpperCase();
+            dailyData[dateStr][`${stationKey}_fuel`] = 0;
+            dailyData[dateStr][`${stationKey}_convenience`] = 0;
+            dailyData[dateStr][`${stationKey}_total`] = 0;
+          });
         }
 
         const fuelSales = report.fuel_sales || 0;
         const convenienceSales = report.convenience_sales || 0;
         const totalSales = report.total_sales || 0;
 
-        // Update daily data based on station
-        if (station === 'MOBIL') {
-          dailyData[dateStr].MOBIL_fuel += fuelSales;
-          dailyData[dateStr].MOBIL_convenience += convenienceSales;
-          dailyData[dateStr].MOBIL_total += totalSales;
-        } else if (station === 'AMOCO ROSEDALE') {
-          dailyData[dateStr].AMOCO_ROSEDALE_fuel += fuelSales;
-          dailyData[dateStr].AMOCO_ROSEDALE_convenience += convenienceSales;
-          dailyData[dateStr].AMOCO_ROSEDALE_total += totalSales;
-        } else if (station === 'AMOCO BROOKLYN') {
-          dailyData[dateStr].AMOCO_BROOKLYN_fuel += fuelSales;
-          dailyData[dateStr].AMOCO_BROOKLYN_convenience += convenienceSales;
-          dailyData[dateStr].AMOCO_BROOKLYN_total += totalSales;
+        // Update daily data based on station dynamically
+        if (stationNames.includes(station)) {
+          const stationKey = station.replace(/\s+/g, '_').toUpperCase();
+          dailyData[dateStr][`${stationKey}_fuel`] += fuelSales;
+          dailyData[dateStr][`${stationKey}_convenience`] += convenienceSales;
+          dailyData[dateStr][`${stationKey}_total`] += totalSales;
         }
 
         // Update station totals
@@ -133,7 +121,10 @@ const SalesChart: React.FC = () => {
 
       // Calculate total for all stations for each day
       Object.values(dailyData).forEach((day: any) => {
-        day.total_all_stations = day.MOBIL_total + day.AMOCO_ROSEDALE_total + day.AMOCO_BROOKLYN_total;
+        day.total_all_stations = stationNames.reduce((total, stationName) => {
+          const stationKey = stationName.replace(/\s+/g, '_').toUpperCase();
+          return total + (day[`${stationKey}_total`] || 0);
+        }, 0);
       });
 
       // Convert to array and sort by date
@@ -310,46 +301,39 @@ const SalesChart: React.FC = () => {
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
                   
-                  {/* MOBIL Station Bars */}
-                  <Bar
-                  dataKey="MOBIL_fuel"
-                  stackId="MOBIL"
-                  fill="#3B82F6"
-                  name="MOBIL - Fuel" />
-
-                  <Bar
-                  dataKey="MOBIL_convenience"
-                  stackId="MOBIL"
-                  fill="#60A5FA"
-                  name="MOBIL - Convenience" />
-
-                  
-                  {/* AMOCO ROSEDALE Station Bars */}
-                  <Bar
-                  dataKey="AMOCO_ROSEDALE_fuel"
-                  stackId="AMOCO_ROSEDALE"
-                  fill="#10B981"
-                  name="AMOCO ROSEDALE - Fuel" />
-
-                  <Bar
-                  dataKey="AMOCO_ROSEDALE_convenience"
-                  stackId="AMOCO_ROSEDALE"
-                  fill="#34D399"
-                  name="AMOCO ROSEDALE - Convenience" />
-
-                  
-                  {/* AMOCO BROOKLYN Station Bars */}
-                  <Bar
-                  dataKey="AMOCO_BROOKLYN_fuel"
-                  stackId="AMOCO_BROOKLYN"
-                  fill="#8B5CF6"
-                  name="AMOCO BROOKLYN - Fuel" />
-
-                  <Bar
-                  dataKey="AMOCO_BROOKLYN_convenience"
-                  stackId="AMOCO_BROOKLYN"
-                  fill="#A78BFA"
-                  name="AMOCO BROOKLYN - Convenience" />
+                  {/* Dynamic Station Bars */}
+                  {stationNames.map((stationName, index) => {
+                    const stationKey = stationName.replace(/\s+/g, '_').toUpperCase();
+                    const baseColor = getStationColor(stationName);
+                    
+                    // Generate colors based on station color or use defaults
+                    const colors = [
+                      '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#8B5A2B'
+                    ];
+                    const lightColors = [
+                      '#60A5FA', '#34D399', '#A78BFA', '#FBBF24', '#F87171', '#A78A5A'
+                    ];
+                    
+                    const fuelColor = colors[index % colors.length];
+                    const convenienceColor = lightColors[index % lightColors.length];
+                    
+                    return (
+                      <React.Fragment key={stationName}>
+                        <Bar
+                          dataKey={`${stationKey}_fuel`}
+                          stackId={stationKey}
+                          fill={fuelColor}
+                          name={`${stationName} - Fuel`}
+                        />
+                        <Bar
+                          dataKey={`${stationKey}_convenience`}
+                          stackId={stationKey}
+                          fill={convenienceColor}
+                          name={`${stationName} - Convenience`}
+                        />
+                      </React.Fragment>
+                    );
+                  })}
 
                 </BarChart>
               </ResponsiveContainer>

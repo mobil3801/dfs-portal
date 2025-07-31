@@ -76,7 +76,6 @@ const RealTimeAdminDashboard = () => {
   const [filterStation, setFilterStation] = useState('All');
 
   const roles = ['Administrator', 'Management', 'Employee'];
-  const stations = ['ALL', 'MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
 
   const [editFormData, setEditFormData] = useState({
     role: '',
@@ -252,8 +251,9 @@ const RealTimeAdminDashboard = () => {
     }
   };
 
-  // Use centralized station color mapping
-  const { getStationTextBadgeColor } = useStationStore();
+  // Use centralized station color mapping and station options
+  const { getStationTextBadgeColor, getFilteredStationOptions } = useStationStore();
+  const stationOptions = getFilteredStationOptions(true);
 
   if (loading) {
     return (
@@ -464,9 +464,9 @@ const RealTimeAdminDashboard = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Stations</SelectItem>
-                  {stations.map((station) =>
-                  <SelectItem key={station} value={station}>{station}</SelectItem>
+                  <SelectItem value="All">All Stations</SelectItem>
+                  {stationOptions.map((station) =>
+                  <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
@@ -509,7 +509,7 @@ const RealTimeAdminDashboard = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStationBadgeColor(profile.station)}>
+                      <Badge className={getStationTextBadgeColor(profile.station)}>
                         {profile.station === 'ALL' ?
                       <><Globe className="w-3 h-3 mr-1" />ALL</> :
 
@@ -601,8 +601,8 @@ const RealTimeAdminDashboard = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {stations.map((station) =>
-                    <SelectItem key={station} value={station}>{station}</SelectItem>
+                    {stationOptions.map((station) =>
+                    <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>

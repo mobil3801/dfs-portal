@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, User, Mail, Building2, Shield, Eye, EyeOff, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import { adminUserService, type AdminCreateUserData } from '@/services/adminUserService';
 
 interface CreateUserDialogProps {
@@ -31,8 +32,13 @@ interface UserFormData {
 
 const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, onUserCreated }) => {
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Get dynamic station options including ALL
+  const stationOptions = getFilteredStationOptions(true);
+  
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
     password: '',
@@ -40,13 +46,12 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
     lastName: '',
     phone: '',
     role: 'Employee',
-    station: 'MOBIL',
+    station: stationOptions[0]?.value || 'MOBIL',
     employee_id: '',
     hire_date: new Date().toISOString().split('T')[0]
   });
 
   const roles = ['Administrator', 'Management', 'Employee'];
-  const stations = ['ALL', 'MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
 
   const generateEmployeeId = () => {
     // Handle ALL station case
@@ -352,11 +357,11 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
                       <SelectValue placeholder="Select station" />
                     </SelectTrigger>
                     <SelectContent>
-                      {stations.map((station) =>
-                      <SelectItem key={station} value={station}>
+                      {stationOptions.map((station) =>
+                      <SelectItem key={station.value} value={station.value}>
                           <div className="flex items-center space-x-2">
-                            {getStationIcon(station)}
-                            <span>{station === 'ALL' ? 'ALL STATIONS' : station}</span>
+                            {getStationIcon(station.value)}
+                            <span>{station.label}</span>
                           </div>
                         </SelectItem>
                       )}

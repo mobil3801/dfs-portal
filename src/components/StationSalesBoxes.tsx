@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Fuel, ShoppingCart, DollarSign, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface SalesData {
   ID: number;
@@ -34,13 +35,15 @@ interface StationSalesData {
   reportCount: number;
 }
 
-const STATIONS = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
-
 const StationSalesBoxes: React.FC = () => {
   const [salesData, setSalesData] = useState<StationSalesData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { stations, getStationColor: getStationColorFromStore, loading: stationsLoading } = useStationStore();
+
+  // Get station names from the centralized store
+  const stationNames = stations.map(station => station.name || station.station_name).filter(Boolean);
 
   const fetchSalesData = async () => {
     try {
@@ -67,8 +70,8 @@ const StationSalesBoxes: React.FC = () => {
 
       if (apiError) throw apiError;
 
-      // Process data by station
-      const stationData: StationSalesData[] = STATIONS.map((station) => {
+      // Process data by station - use dynamic station list
+      const stationData: StationSalesData[] = stationNames.map((station) => {
         const stationReports = data?.List?.filter((report: SalesData) =>
         report.station === station
         ) || [];
@@ -137,16 +140,28 @@ const StationSalesBoxes: React.FC = () => {
   }, []);
 
   const getStationColor = (station: string) => {
-    switch (station) {
-      case 'MOBIL':
-        return 'blue';
-      case 'AMOCO ROSEDALE':
-        return 'green';
-      case 'AMOCO BROOKLYN':
-        return 'purple';
-      default:
-        return 'gray';
+    // Use centralized color system first, fall back to defaults
+    try {
+      const stationColorFromStore = getStationColorFromStore(station);
+      if (stationColorFromStore) {
+        // Convert Tailwind classes to simple color names for backward compatibility
+        if (stationColorFromStore.includes('blue')) return 'blue';
+        if (stationColorFromStore.includes('green')) return 'green';
+        if (stationColorFromStore.includes('purple')) return 'purple';
+        if (stationColorFromStore.includes('red')) return 'red';
+        if (stationColorFromStore.includes('yellow')) return 'yellow';
+      }
+    } catch (error) {
+      console.warn('Error getting station color from store:', error);
     }
+
+    // Dynamic fallback logic using hash-based color assignment
+    const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'indigo', 'pink', 'gray'];
+    let hash = 0;
+    for (let i = 0; i < station.length; i++) {
+      hash = station.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
   };
 
   const formatCurrency = (amount: number) => {
@@ -172,11 +187,21 @@ const StationSalesBoxes: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || stationsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {STATIONS.map((station) =>
+        {stationNames.length > 0 ? stationNames.map((station) =>
         <Card key={station} className="p-6">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          </Card>
+        ) :
+        // Fallback loading state when stations aren't loaded yet
+        ['Station 1', 'Station 2', 'Station 3'].map((placeholder, index) =>
+        <Card key={index} className="p-6">
             <div className="animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
               <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>

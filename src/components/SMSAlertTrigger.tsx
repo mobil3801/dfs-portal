@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import {
   Bell,
   Clock,
@@ -57,6 +58,10 @@ const SMSAlertTrigger: React.FC = () => {
   const [autoScheduling, setAutoScheduling] = useState(false);
   const [lastAutoRun, setLastAutoRun] = useState<Date | null>(null);
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
+  
+  // Get dynamic station options including ALL
+  const stationOptions = getFilteredStationOptions(true);
 
   useEffect(() => {
     loadLicenses();
@@ -406,10 +411,11 @@ const SMSAlertTrigger: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Stations</SelectItem>
-                  <SelectItem value="MOBIL">MOBIL</SelectItem>
-                  <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                  <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
+                  {stationOptions.map((station) => (
+                    <SelectItem key={station.value} value={station.value}>
+                      {station.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

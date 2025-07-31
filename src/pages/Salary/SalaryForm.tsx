@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import { ArrowLeft, Calculator, Save, DollarSign, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -65,6 +66,7 @@ const SalaryForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
   const isEditing = Boolean(id && id !== 'new');
 
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -96,7 +98,7 @@ const SalaryForm: React.FC = () => {
       other_deductions: 0,
       total_deductions: 0,
       net_pay: 0,
-      station: 'MOBIL',
+      station: getFilteredStationOptions(false)[0]?.value || 'MOBIL',
       status: 'Pending',
       notes: '',
       created_by: 1
@@ -352,9 +354,11 @@ const SalaryForm: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MOBIL">MOBIL</SelectItem>
-                    <SelectItem value="AMOCO ROSEDALE">AMOCO (Rosedale)</SelectItem>
-                    <SelectItem value="AMOCO BROOKLYN">AMOCO (Brooklyn)</SelectItem>
+                    {getFilteredStationOptions(false).map((station) => (
+                      <SelectItem key={station.value} value={station.value}>
+                        {station.label}
+                      </SelectItem>
+                    ))}
                     <SelectItem value="MANAGER">Manager</SelectItem>
                   </SelectContent>
                 </Select>

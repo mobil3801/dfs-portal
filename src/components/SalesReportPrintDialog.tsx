@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { useStationStore } from '@/hooks/use-station-store';
 import { Printer, X } from 'lucide-react';
 
 interface SalesReport {
@@ -30,6 +31,9 @@ const SalesReportPrintDialog: React.FC<SalesReportPrintDialogProps> = ({
   onOpenChange,
   report
 }) => {
+  // Use centralized station store for color functions
+  const { getStationBadgeColor } = useStationStore();
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -45,19 +49,6 @@ const SalesReportPrintDialog: React.FC<SalesReportPrintDialogProps> = ({
       style: 'currency',
       currency: 'USD'
     }).format(amount);
-  };
-
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-500';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-500';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
   };
 
   const handlePrint = () => {
@@ -99,7 +90,7 @@ const SalesReportPrintDialog: React.FC<SalesReportPrintDialogProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Station:</span>
-                    <Badge className={`text-white ${getStationBadgeColor(report.station)}`}>
+                    <Badge className={getStationBadgeColor(report.station)}>
                       {report.station}
                     </Badge>
                   </div>

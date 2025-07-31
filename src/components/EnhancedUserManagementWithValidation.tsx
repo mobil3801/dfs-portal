@@ -25,6 +25,7 @@ import {
 "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStationStore } from "@/hooks/use-station-store";
 import {
   UserValidationDisplay,
   RoleConflictChecker,
@@ -84,6 +85,7 @@ const EnhancedUserManagementWithValidation: React.FC = () => {
 
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { getFilteredStationOptions } = useStationStore();
   const {
     validateUser,
     validationErrors,
@@ -93,7 +95,8 @@ const EnhancedUserManagementWithValidation: React.FC = () => {
   } = useUserValidation();
 
   const roles = ['Administrator', 'Management', 'Employee'];
-  const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  // Get dynamic station options (without ALL option for user assignment)
+  const stationOptions = getFilteredStationOptions(false);
 
   // Load users and profiles
   const loadUsers = async () => {
@@ -499,8 +502,8 @@ const EnhancedUserManagementWithValidation: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {stations.map((station) =>
-                    <SelectItem key={station} value={station}>{station}</SelectItem>
+                    {stationOptions.map((station) =>
+                    <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>

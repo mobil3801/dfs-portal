@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import { Calendar, Clock, Plus, Edit, Trash2, Play, Pause, Loader2, AlertTriangle } from 'lucide-react';
 import { smsService } from '@/services/smsService';
 
@@ -56,13 +57,6 @@ const ALERT_TYPES = [
   'Emergency Alert'
 ];
 
-const STATION_OPTIONS = [
-  'ALL',
-  'MOBIL',
-  'AMOCO ROSEDALE',
-  'AMOCO BROOKLYN'
-];
-
 const AlertScheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<AlertSchedule[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
@@ -71,6 +65,10 @@ const AlertScheduler: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRunning, setIsRunning] = useState<number | null>(null);
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
+  
+  // Get dynamic station options including ALL
+  const stationOptions = getFilteredStationOptions(true);
 
   const [newSchedule, setNewSchedule] = useState<AlertSchedule>({
     schedule_name: '',
@@ -547,8 +545,8 @@ const AlertScheduler: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {STATION_OPTIONS.map(station => (
-                          <SelectItem key={station} value={station}>{station}</SelectItem>
+                        {stationOptions.map(station => (
+                          <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

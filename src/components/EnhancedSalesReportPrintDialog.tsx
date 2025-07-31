@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useStationStore } from '@/hooks/use-station-store';
 import { Printer, X, DollarSign, Fuel, TrendingUp, Receipt, Calculator, FileText, AlertCircle } from 'lucide-react';
 
 interface EnhancedSalesReport {
@@ -61,6 +62,9 @@ const EnhancedSalesReportPrintDialog: React.FC<EnhancedSalesReportPrintDialogPro
 }) => {
   if (!report) return null;
 
+  // Use centralized station store for color functions
+  const { getStationBadgeColor } = useStationStore();
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -80,19 +84,6 @@ const EnhancedSalesReportPrintDialog: React.FC<EnhancedSalesReportPrintDialogPro
 
   const formatNumber = (num: number) => {
     return (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-red-500 text-white';
-      case 'AMOCO ROSEDALE':
-        return 'bg-blue-500 text-white';
-      case 'AMOCO BROOKLYN':
-        return 'bg-green-500 text-white';
-      default:
-        return 'bg-gray-500 text-white';
-    }
   };
 
   // Parse expenses data - handle both old and new formats

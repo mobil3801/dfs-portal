@@ -14,6 +14,7 @@ import {
 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnhancedRoleAccess } from '@/hooks/use-enhanced-role-access';
+import { useStationStore } from '@/hooks/use-station-store';
 import { toast } from '@/hooks/use-toast';
 
 interface DemoUser {
@@ -77,14 +78,20 @@ const DEMO_USERS: DemoUser[] = [
 const UserRoleSwitcher: React.FC = () => {
   const { userProfile } = useAuth();
   const roleAccess = useEnhancedRoleAccess();
+  const { getFilteredStationOptions } = useStationStore();
   const [users, setUsers] = useState<DemoUser[]>(DEMO_USERS);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
+  // Get dynamic station options
+  const stationOptions = getFilteredStationOptions(true); // Include "ALL" option
+  const firstStationName = stationOptions.find(option => option.value !== 'ALL')?.value || 'STATION_1';
+  
   const [newUser, setNewUser] = useState<Partial<DemoUser>>({
     name: '',
     email: '',
     role: 'Employee',
-    station: 'MOBIL',
+    station: firstStationName,
     isActive: true,
     employeeId: ''
   });
@@ -164,7 +171,7 @@ const UserRoleSwitcher: React.FC = () => {
       name: newUser.name!,
       email: newUser.email!,
       role: newUser.role || 'Employee',
-      station: newUser.station || 'MOBIL',
+      station: newUser.station || firstStationName,
       isActive: newUser.isActive !== false,
       employeeId: newUser.employeeId!
     };
@@ -174,7 +181,7 @@ const UserRoleSwitcher: React.FC = () => {
       name: '',
       email: '',
       role: 'Employee',
-      station: 'MOBIL',
+      station: firstStationName,
       isActive: true,
       employeeId: ''
     });
@@ -332,10 +339,11 @@ const UserRoleSwitcher: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ALL">All Stations</SelectItem>
-                      <SelectItem value="MOBIL">MOBIL</SelectItem>
-                      <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                      <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
+                      {stationOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

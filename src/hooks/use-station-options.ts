@@ -40,7 +40,8 @@ export const useStationOptions = (includeAll: boolean = true) => {
     // This is a temporary sync version for backward compatibility
     // Components should gradually migrate to the async version
     if (canSelectAll) {
-      return ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+      // Return all station names from the centralized service
+      return stationOptions.filter(opt => opt.value !== 'ALL').map(opt => opt.value);
     }
 
     // Filter stations based on user's specific station permissions
@@ -48,27 +49,27 @@ export const useStationOptions = (includeAll: boolean = true) => {
     const permissions = userProfile?.permissions;
     const stationAccess = userProfile?.stationAccess;
     
-    if ((Array.isArray(permissions) && permissions.includes('view_mobil')) || 
-        (Array.isArray(stationAccess) && stationAccess.includes('MOBIL'))) {
-      accessibleStations.push('MOBIL');
-    }
-    if ((Array.isArray(permissions) && permissions.includes('view_amoco_rosedale')) || 
-        (Array.isArray(stationAccess) && stationAccess.includes('AMOCO ROSEDALE'))) {
-      accessibleStations.push('AMOCO ROSEDALE');
-    }
-    if ((Array.isArray(permissions) && permissions.includes('view_amoco_brooklyn')) || 
-        (Array.isArray(stationAccess) && stationAccess.includes('AMOCO BROOKLYN'))) {
-      accessibleStations.push('AMOCO BROOKLYN');
-    }
+    // Check permissions for each available station dynamically
+    stationOptions.forEach(option => {
+      if (option.value === 'ALL') return; // Skip the ALL option
+      
+      const stationValue = option.value;
+      const permissionKey = `view_${stationValue.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}`;
+      
+      if ((Array.isArray(permissions) && permissions.includes(permissionKey)) ||
+          (Array.isArray(stationAccess) && stationAccess.includes(stationValue))) {
+        accessibleStations.push(stationValue);
+      }
+    });
 
     return accessibleStations;
-  }, [userProfile?.role, userProfile?.permissions, userProfile?.stationAccess, canSelectAll]);
+  }, [userProfile?.role, userProfile?.permissions, userProfile?.stationAccess, canSelectAll, stationOptions]);
 
   return {
     stationOptions: legacyStationOptions,
     getStationColor,
     canSelectAll,
-    allStations: ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'],
+    allStations: stationOptions.filter(opt => opt.value !== 'ALL').map(opt => opt.value), // Dynamic all stations
     getUserAccessibleStations: getUserAccessibleStationsSync,
     getUserAccessibleStationsAsync: getAllStations,
     loading,

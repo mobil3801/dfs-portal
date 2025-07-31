@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useStationStore } from '@/hooks/use-station-store';
 import {
   Clock,
   Plus,
@@ -54,6 +55,10 @@ const SMSAlertScheduler: React.FC = () => {
   const [editingSchedule, setEditingSchedule] = useState<AlertSchedule | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
+  
+  // Get dynamic station options including ALL
+  const stationOptions = getFilteredStationOptions(true);
 
   const [newSchedule, setNewSchedule] = useState({
     schedule_name: '',
@@ -381,10 +386,11 @@ const SMSAlertScheduler: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Stations</SelectItem>
-                    <SelectItem value="MOBIL">MOBIL</SelectItem>
-                    <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                    <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
+                    {stationOptions.map((station) => (
+                      <SelectItem key={station.value} value={station.value}>
+                        {station.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

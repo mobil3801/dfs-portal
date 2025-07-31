@@ -18,7 +18,7 @@ const StationSelector: React.FC<StationSelectorProps> = ({
   description = "Choose the station to create a daily sales report for",
   includeAll = true
 }) => {
-  const { getFilteredStationOptions, canSelectAll, loading, error } = useStationStore();
+  const { getFilteredStationOptions, canSelectAll, loading, error, stations, getStationBackgroundColor } = useStationStore();
 
   // Get filtered station options based on permissions and includeAll setting
   const visibleStations = getFilteredStationOptions(includeAll);
@@ -35,16 +35,14 @@ const StationSelector: React.FC<StationSelectorProps> = ({
       return 'View and manage all stations';
     }
 
-    switch (stationValue) {
-      case 'MOBIL':
-        return 'Gas station with convenience store';
-      case 'AMOCO ROSEDALE':
-        return 'Full service gas station';
-      case 'AMOCO BROOKLYN':
-        return 'Full service gas station';
-      default:
-        return 'Gas station location';
+    // Find station in centralized store first
+    const stationData = stations.find(s => (s.name || s.station_name) === stationValue);
+    if (stationData && stationData.description) {
+      return stationData.description;
     }
+
+    // Default fallback
+    return 'Gas station location';
   };
 
   const getStationLocation = (stationValue: string) => {
@@ -52,21 +50,28 @@ const StationSelector: React.FC<StationSelectorProps> = ({
       return 'All Locations';
     }
 
-    switch (stationValue) {
-      case 'MOBIL':
-        return 'Far Rockaway';
-      case 'AMOCO ROSEDALE':
-        return 'Rosedale';
-      case 'AMOCO BROOKLYN':
-        return 'Brooklyn';
-      default:
-        return 'Location';
+    // Find station in centralized store first
+    const stationData = stations.find(s => (s.name || s.station_name) === stationValue);
+    if (stationData) {
+      // Extract location from address or use fallback
+      const address = stationData.address || '';
+      if (address.includes('Brooklyn')) return 'Brooklyn';
+      if (address.includes('Rosedale')) return 'Rosedale';
+      if (address.includes('Far Rockaway')) return 'Far Rockaway';
+      if (address.trim()) return address.split(',')[0]; // First part of address
     }
+
+    return 'Location';
   };
 
   const getButtonColorClass = (station: any) => {
     // Use centralized color mapping for consistency
-    return getStationBackgroundColor(station.value);
+    try {
+      return getStationBackgroundColor(station.value);
+    } catch (error) {
+      console.warn('Error getting station background color:', error);
+      return 'hover:bg-gray-50 hover:border-gray-300';
+    }
   };
 
   if (loading) {

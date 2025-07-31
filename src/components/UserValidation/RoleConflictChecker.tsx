@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Users, RefreshCw, CheckCircle } from "lucide-react";
 import { useUserValidation } from '@/hooks/use-user-validation';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface RoleConflictCheckerProps {
   selectedRole?: string;
@@ -31,9 +32,11 @@ const RoleConflictChecker: React.FC<RoleConflictCheckerProps> = ({
   const [isChecking, setIsChecking] = useState(false);
 
   const { checkRoleConflicts } = useUserValidation({ showToasts: false });
+  const { getFilteredStationOptions } = useStationStore();
 
   const roles = ['Administrator', 'Management', 'Employee'];
-  const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  // Get dynamic station options (without ALL option for role assignment)
+  const stationOptions = getFilteredStationOptions(false);
 
   const checkForConflicts = async () => {
     if (!role || !station) return;
@@ -102,8 +105,8 @@ const RoleConflictChecker: React.FC<RoleConflictCheckerProps> = ({
                 <SelectValue placeholder="Select station" />
               </SelectTrigger>
               <SelectContent>
-                {stations.map((s) =>
-                <SelectItem key={s} value={s}>{s}</SelectItem>
+                {stationOptions.map((station) =>
+                <SelectItem key={station.value} value={station.value}>{station.label}</SelectItem>
                 )}
               </SelectContent>
             </Select>

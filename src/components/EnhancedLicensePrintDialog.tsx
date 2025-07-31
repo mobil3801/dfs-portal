@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { X, Printer, FileText, Calendar, MapPin, Shield, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface License {
   ID: number;
@@ -27,6 +28,8 @@ interface EnhancedLicensePrintDialogProps {
 }
 
 const EnhancedLicensePrintDialog: React.FC<EnhancedLicensePrintDialogProps> = ({ license, isOpen, onClose }) => {
+  const { getStationPrintColor, stations } = useStationStore();
+  
   if (!license) return null;
 
   const formatDate = (dateString: string) => {
@@ -115,16 +118,22 @@ const EnhancedLicensePrintDialog: React.FC<EnhancedLicensePrintDialogProps> = ({
   };
 
   const getStationInfo = (station: string) => {
-    // Use centralized station color mapping for print consistency
-    const { getStationPrintColor } = useStationStore();
+    // Find station in centralized store first
+    const stationData = stations.find(s => (s.name || s.station_name) === station);
+    if (stationData) {
+      return {
+        color: getStationPrintColor(station),
+        description: stationData.description || `${station} Station`
+      };
+    }
     
-    const stationMap = {
-      'MOBIL': { description: 'Mobil Gas Station' },
-      'AMOCO ROSEDALE': { description: 'Amoco Rosedale Station' },
-      'AMOCO BROOKLYN': { description: 'Amoco Brooklyn Station' },
-      'ALL': { description: 'All Station Locations' }
-    };
-    return stationMap[station as keyof typeof stationMap] || { color: 'bg-gray-500', description: station };
+    // Handle special cases
+    if (station === 'ALL') {
+      return { color: 'bg-gray-600', description: 'All Station Locations' };
+    }
+    
+    // Fallback for unknown stations
+    return { color: 'bg-gray-500', description: station };
   };
 
   const statusInfo = getStatusInfo(license.status, license.expiry_date);

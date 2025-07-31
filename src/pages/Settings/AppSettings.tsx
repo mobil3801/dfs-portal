@@ -18,12 +18,17 @@ import {
   Save } from
 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStationStore } from '@/hooks/use-station-store';
 import { useToast } from '@/hooks/use-toast';
 
 const AppSettings = () => {
   const { user, userProfile, isAdmin, isManager } = useAuth();
   const { toast } = useToast();
+  const { getFilteredStationOptions } = useStationStore();
   const [loading, setLoading] = useState(false);
+  
+  // Get dynamic station options including ALL
+  const stationOptions = getFilteredStationOptions(true);
   const [settings, setSettings] = useState({
     notifications: {
       emailAlerts: true,
@@ -181,10 +186,11 @@ const AppSettings = () => {
                     <SelectValue placeholder="Select station" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MOBIL">MOBIL</SelectItem>
-                    <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                    <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
-                    <SelectItem value="ALL">All Stations</SelectItem>
+                    {stationOptions.map((station) => (
+                      <SelectItem key={station.value} value={station.value}>
+                        {station.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

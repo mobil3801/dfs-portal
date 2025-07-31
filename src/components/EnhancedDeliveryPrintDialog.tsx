@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useStationStore } from '@/hooks/use-station-store';
 import { Printer, X, Truck, Fuel, Calendar, FileText, MapPin, Gauge, BarChart3, AlertTriangle } from 'lucide-react';
 
 interface DeliveryRecord {
@@ -54,6 +55,9 @@ const EnhancedDeliveryPrintDialog: React.FC<EnhancedDeliveryPrintDialogProps> = 
 }) => {
   if (!delivery) return null;
 
+  // Use centralized station store for color functions
+  const { getStationBadgeColor } = useStationStore();
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -78,19 +82,6 @@ const EnhancedDeliveryPrintDialog: React.FC<EnhancedDeliveryPrintDialogProps> = 
 
   const formatNumber = (num: number) => {
     return (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-red-500 text-white';
-      case 'AMOCO ROSEDALE':
-        return 'bg-blue-500 text-white';
-      case 'AMOCO BROOKLYN':
-        return 'bg-green-500 text-white';
-      default:
-        return 'bg-gray-500 text-white';
-    }
   };
 
   const getStatusColor = (status: string) => {

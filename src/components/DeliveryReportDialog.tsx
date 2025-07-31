@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useStationStore } from '@/hooks/use-station-store';
 import {
   Truck,
   Calendar,
@@ -44,6 +45,9 @@ const DeliveryReportDialog: React.FC<DeliveryReportDialogProps> = ({
 }) => {
   if (!delivery) return null;
 
+  // Use centralized station store for color functions
+  const { getStationTextBadgeColor } = useStationStore();
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -63,19 +67,6 @@ const DeliveryReportDialog: React.FC<DeliveryReportDialogProps> = ({
 
   const getTotalTankVolume = () => {
     return delivery.regular_tank_volume + delivery.plus_tank_volume + delivery.super_tank_volume;
-  };
-
-  const getStationBadgeColor = (station: string) => {
-    switch (station) {
-      case 'MOBIL':
-        return 'bg-red-100 text-red-800';
-      case 'AMOCO ROSEDALE':
-        return 'bg-blue-100 text-blue-800';
-      case 'AMOCO BROOKLYN':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   const handlePrint = () => {
@@ -274,7 +265,7 @@ const DeliveryReportDialog: React.FC<DeliveryReportDialogProps> = ({
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-600">Station</p>
-                    <Badge className={getStationBadgeColor(delivery.station)}>
+                    <Badge className={getStationTextBadgeColor(delivery.station)}>
                       {delivery.station}
                     </Badge>
                   </div>

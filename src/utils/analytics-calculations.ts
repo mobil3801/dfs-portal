@@ -1,4 +1,5 @@
 // Analytics calculation utilities for dashboard metrics
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface CalculationOptions {
   timeframe: string;
@@ -388,11 +389,21 @@ class AnalyticsCalculations {
 
   // Calculate station comparison
   private calculateStationComparison(salesData: any[], stations: string[]) {
-    const stationMetrics = {
-      mobil: this.calculateStationMetrics(salesData, 'MOBIL'),
-      amocoRosedale: this.calculateStationMetrics(salesData, 'AMOCO ROSEDALE'),
-      amocoBrooklyn: this.calculateStationMetrics(salesData, 'AMOCO BROOKLYN')
-    };
+    // Get all available stations dynamically from the global store
+    const globalStore = (globalThis as any).__stationStore;
+    const availableStations = globalStore?.stations || [];
+    
+    // If no stations in store, fall back to provided stations or defaults
+    const stationsToProcess = availableStations.length > 0
+      ? availableStations.map((s: any) => s.name || s.station_name)
+      : stations.filter(s => s !== 'ALL');
+
+    const stationMetrics: Record<string, any> = {};
+    
+    stationsToProcess.forEach((station: string) => {
+      const normalizedKey = station.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+      stationMetrics[normalizedKey] = this.calculateStationMetrics(salesData, station);
+    });
 
     return stationMetrics;
   }
