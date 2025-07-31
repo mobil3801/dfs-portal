@@ -142,8 +142,8 @@
         "-p",
         "*test*.py"
     ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestEnabled": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
     "markdown-preview-enhanced.liveUpdate": true,
     "markdown.extension.preview.autoShowPreviewToSide": true,
     "markdown-preview-enhanced.useGitHubStylePipedLink": true,
@@ -158,5 +158,8 @@
     "markdown-preview-enhanced.enableTypographer": true,
     "markdown-preview-enhanced.HTML5EmbedIsAllowedHttp": true,
     "markdown-preview-enhanced.HTML5EmbedUseLinkSyntax": true,
-    "liveServer.settings.multiRootWorkspaceName": "dfs-portal"
+    "liveServer.settings.multiRootWorkspaceName": "dfs-portal",
+    "python.testing.pytestArgs": [
+        "src"
+    ]
 }
