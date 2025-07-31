@@ -157,5 +157,6 @@
     "markdown-preview-enhanced.enableScriptExecution": false,
     "markdown-preview-enhanced.enableTypographer": true,
     "markdown-preview-enhanced.HTML5EmbedIsAllowedHttp": true,
-    "markdown-preview-enhanced.HTML5EmbedUseLinkSyntax": true
+    "markdown-preview-enhanced.HTML5EmbedUseLinkSyntax": true,
+    "liveServer.settings.multiRootWorkspaceName": "dfs-portal"
 }
