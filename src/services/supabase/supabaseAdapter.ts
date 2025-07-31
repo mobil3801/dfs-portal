@@ -28,12 +28,12 @@ const PG_ERROR_CODES = {
   '57P05': 'Idle session timeout',
 };
 
-// Table ID to table name mapping - Fixed: Removed explicit "public." prefixes to prevent schema doubling
+// Table ID to table name mapping - Updated with compatibility views
 // The Supabase client automatically handles schema resolution via db.schema config
 const TABLE_ID_MAPPING: Record<string | number, string> = {
   11725: 'user_profiles',     // User profiles with UUID foreign keys
   11726: 'products',          // Products management
-  11727: 'employees',         // Employee management
+  11727: 'employees_view',    // Employee management (using compatibility view)
   11731: 'licenses',          // License tracking
   12196: 'deliveries',        // Delivery management
   12356: 'sales_reports',     // Sales reporting
@@ -49,6 +49,11 @@ const TABLE_ID_MAPPING: Record<string | number, string> = {
   25712: 'module_access',     // Module permissions
   26928: 'file_uploads',      // File upload tracking
   'User': 'auth.users'        // Supabase auth users (explicitly qualified)
+}
+
+// Special handling for tables that need write operations on base tables
+const WRITE_TABLE_MAPPING: Record<string | number, string> = {
+  11727: 'employees',         // Write operations go to base table
 }
 
 // Interface matching the existing window.ezsite.apis
@@ -190,8 +195,12 @@ async function checkTableInAllSchemas(tableName: string): Promise<{found: boolea
 // Supabase Adapter Implementation
 // cspell:ignore Ezsite
 class SupabaseAdapter implements EzsiteApiAdapter {
-  private getTableName(tableId: string | number): string {
-    const tableName = TABLE_ID_MAPPING[tableId]
+  private getTableName(tableId: string | number, forWrite: boolean = false): string {
+    // For write operations, use the base table if a special mapping exists
+    const tableName = forWrite && WRITE_TABLE_MAPPING[tableId]
+      ? WRITE_TABLE_MAPPING[tableId]
+      : TABLE_ID_MAPPING[tableId];
+      
     if (!tableName) {
       console.error('Table ID mapping failed')
       console.error('Requested table ID:', tableId)
@@ -309,7 +318,7 @@ class SupabaseAdapter implements EzsiteApiAdapter {
     };
     
     try {
-      const tableName = this.getTableName(tableId);
+      const tableName = this.getTableName(tableId, true); // Use base table for writes
       context.tableName = tableName;
       
       // Handle special case for auth.users table
@@ -369,7 +378,7 @@ class SupabaseAdapter implements EzsiteApiAdapter {
     };
     
     try {
-      const tableName = this.getTableName(tableId);
+      const tableName = this.getTableName(tableId, true); // Use base table for writes
       context.tableName = tableName;
       
       // Handle special case for auth.users table
@@ -440,7 +449,7 @@ class SupabaseAdapter implements EzsiteApiAdapter {
     };
     
     try {
-      const tableName = this.getTableName(tableId);
+      const tableName = this.getTableName(tableId, true); // Use base table for writes
       context.tableName = tableName;
       
       // Handle special case for auth.users table

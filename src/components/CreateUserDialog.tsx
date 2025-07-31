@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, User, Mail, Building2, Shield, Eye, EyeOff, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { adminUserService, type AdminCreateUserData } from '@/services/adminUserService';
 
 interface CreateUserDialogProps {
   isOpen: boolean;
@@ -106,152 +107,34 @@ const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ isOpen, onClose, on
 
     setLoading(true);
     try {
-      console.log('Starting user creation process...');
+      console.log('Starting admin user creation process...');
 
-      // Step 1: Register user with Supabase Auth
-      console.log('Registering user with email:', formData.email);
-      const { error: authError } = await window.ezsite.apis.register({
+      // Use the admin service to create user (bypasses signup restrictions)
+      const userData: AdminCreateUserData = {
         email: formData.email,
-        password: formData.password
-      });
-
-      if (authError) {
-        console.error('Authentication registration failed:', authError);
-        throw new Error(`Failed to create user account: ${authError}`);
-      }
-
-      console.log('User authentication account created successfully');
-
-      // Step 2: Get the newly created user info
-      let userInfo;
-      let retryCount = 0;
-      const maxRetries = 5;
-
-      // Retry logic to get user info after registration
-      while (retryCount < maxRetries) {
-        try {
-          const { data, error: userInfoError } = await window.ezsite.apis.getUserInfo();
-          if (!userInfoError && data) {
-            userInfo = data;
-            break;
-          }
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
-          }
-        } catch (error) {
-          console.log(`Retry ${retryCount + 1} failed:`, error);
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-      }
-
-      if (!userInfo) {
-        console.error('Failed to get user info after registration');
-        throw new Error('User was created but profile setup failed. Please try to create the profile manually.');
-      }
-
-      console.log('Retrieved user info:', userInfo);
-
-      // Step 3: Create user profile in the database
-      const profileData = {
-        user_id: userInfo.ID,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
         role: formData.role,
         station: formData.station,
         employee_id: formData.employee_id,
-        phone: formData.phone,
-        hire_date: formData.hire_date,
-        is_active: true,
-        detailed_permissions: JSON.stringify({
-          dashboard: { view: true, create: false, edit: false, delete: false },
-          products: { view: formData.role !== 'employee', create: false, edit: false, delete: false },
-          employees: { view: formData.role === 'admin', create: false, edit: false, delete: false },
-          sales_reports: { view: true, create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
-          vendors: { view: formData.role !== 'Employee', create: false, edit: false, delete: false },
-          orders: { view: formData.role !== 'Employee', create: formData.role !== 'Employee', edit: formData.role !== 'Employee', delete: false },
-          licenses: { view: formData.role !== 'employee', create: false, edit: false, delete: false },
-          salary: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: false },
-          inventory: { view: true, create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
-          delivery: { view: formData.role !== 'employee', create: formData.role !== 'employee', edit: formData.role !== 'employee', delete: false },
-          settings: { view: formData.role === 'admin', create: false, edit: formData.role === 'admin', delete: false },
-          user_management: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: formData.role === 'admin' },
-          site_management: { view: formData.role === 'admin', create: formData.role === 'admin', edit: formData.role === 'admin', delete: formData.role === 'admin' },
-          system_logs: { view: formData.role === 'admin', create: false, edit: false, delete: false },
-          security_settings: { view: formData.role === 'admin', create: false, edit: formData.role === 'admin', delete: false }
-        })
+        hire_date: formData.hire_date
       };
 
-      console.log('Creating user profile with data:', profileData);
-      const { error: profileError } = await window.ezsite.apis.tableCreate(11725, profileData);
+      const result = await adminUserService.createUser(userData);
 
-      if (profileError) {
-        console.error('Profile creation failed:', profileError);
-        throw new Error(`Failed to create user profile: ${profileError}`);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create user account');
       }
 
-      console.log('User profile created successfully in production database');
-
-
-      // Step 4: Send welcome email (optional)
-      try {
-        const stationDisplay = formData.station === 'ALL' ? 'All Stations' : formData.station;
-        const emailContent = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1f2937;">Welcome to DFS Manager Portal</h2>
-            <p>Hello ${formData.firstName} ${formData.lastName},</p>
-            <p>Your account has been successfully created for the DFS Manager Portal.</p>
-            
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #374151; margin-top: 0;">Account Details:</h3>
-              <p><strong>Email:</strong> ${formData.email}</p>
-              <p><strong>Employee ID:</strong> ${formData.employee_id}</p>
-              <p><strong>Role:</strong> ${formData.role}</p>
-              <p><strong>Station:</strong> ${stationDisplay}</p>
-              <p><strong>Hire Date:</strong> ${new Date(formData.hire_date).toLocaleDateString()}</p>
-            </div>
-            
-            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-              <h4 style="color: #92400e; margin-top: 0;">Login Information:</h4>
-              <p style="color: #92400e; margin-bottom: 0;"><strong>Temporary Password:</strong> ${formData.password}</p>
-              <p style="color: #92400e; font-size: 14px;"><em>Please change your password after your first login for security purposes.</em></p>
-            </div>
-            
-            ${formData.station === 'ALL' ? `
-            <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
-              <h4 style="color: #1e40af; margin-top: 0;">Multi-Station Access:</h4>
-              <p style="color: #1e40af; margin-bottom: 0;">You have been granted access to <strong>ALL stations</strong>. This means you can view, edit, and delete data from all locations based on your role permissions.</p>
-            </div>
-            ` : ''}
-            
-            <p>You can access the portal at: <a href="${window.location.origin}" style="color: #2563eb;">${window.location.origin}</a></p>
-            
-            <p>If you have any questions or need assistance, please contact your administrator.</p>
-            
-            <p>Best regards,<br>DFS Manager Portal Team</p>
-          </div>
-        `;
-
-        await window.ezsite.apis.sendEmail({
-          from: 'support@ezsite.ai',
-          to: [formData.email],
-          subject: 'Welcome to DFS Manager Portal - Account Created',
-          html: emailContent
-        });
-
-        console.log('Welcome email sent successfully');
-      } catch (emailError) {
-        console.warn('Failed to send welcome email:', emailError);
-        // Don't fail the entire process if email fails
-      }
+      console.log('User created successfully with ID:', result.userId);
 
       const stationText = formData.station === 'ALL' ? 'all stations' : formData.station;
       toast({
         title: "Success",
-        description: `User account created successfully for ${formData.firstName} ${formData.lastName} with access to ${stationText}. Data saved to production database in real-time.`
+        description: `User account created successfully for ${formData.firstName} ${formData.lastName} with access to ${stationText}. Account is ready for immediate use.`
       });
-
 
       // Reset form
       setFormData({
