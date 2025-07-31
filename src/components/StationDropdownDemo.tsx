@@ -59,7 +59,7 @@ const StationDropdownDemo: React.FC = () => {
     const station = selectedStation1;
     if (!station) return;
 
-    if (station === 'ALL_STATIONS' || station === 'ALL') {
+    if (station === 'ALL') {
       console.log('Accessing data for all stations:', getFilteredStationOptions(false).map(s => s.value));
     } else {
       console.log('Accessing data for station:', station);
@@ -202,7 +202,7 @@ const StationDropdownDemo: React.FC = () => {
               <Alert>
                 <Eye className="w-4 h-4" />
                 <AlertDescription>
-                  {selectedStation1 === 'ALL_STATIONS' || selectedStation1 === 'ALL' ? (
+                  {selectedStation1 === 'ALL' ? (
                     <span>
                       Generating report for <strong>all accessible stations</strong>
                     </span>
@@ -247,8 +247,8 @@ const StationDropdownDemo: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-gray-500" />
                 <span className="text-sm text-gray-600">
-                  {selectedStation2 === 'ALL_STATIONS' || selectedStation2 === 'ALL' 
-                    ? "Managing all station inventories" 
+                  {selectedStation2 === 'ALL'
+                    ? "Managing all station inventories"
                     : `Managing ${selectedStation2} inventory`}
                 </span>
               </div>

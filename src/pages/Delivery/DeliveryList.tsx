@@ -263,7 +263,7 @@ const DeliveryList: React.FC = () => {
                     <SelectValue placeholder="Filter by station" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Stations</SelectItem>
+                    <SelectItem value="ALL">All Stations</SelectItem>
                     {stations.map((station) =>
                     <SelectItem key={station} value={station}>
                         {station}

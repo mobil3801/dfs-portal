@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { DollarSign, Users, Building, Save, Plus, Calculator, Calendar, Clock, Info, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStationStore } from '@/hooks/use-station-store';
 import { format } from 'date-fns';
 import {
   getCurrentPayPeriod,
@@ -69,16 +70,30 @@ const SalaryList: React.FC = () => {
   const [submitting, setSubmitting] = useState<{[key: string]: boolean;}>({});
   const { toast } = useToast();
   const { userProfile, isAdmin } = useAuth();
+  
+  // Use central station store for real-time updates
+  const { stations: storeStations, loading: stationsLoading, getStationColor } = useStationStore();
 
   const SALARY_TABLE_ID = '11788';
   const EMPLOYEES_TABLE_ID = '11727';
 
-  // Station configurations
-  const stations = [
-  { id: 'MOBIL', name: 'MOBIL', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100' },
-  { id: 'AMOCO ROSEDALE', name: 'AMOCO (Rosedale)', color: 'bg-green-50 border-green-200 hover:bg-green-100' },
-  { id: 'AMOCO BROOKLYN', name: 'AMOCO (Brooklyn)', color: 'bg-purple-50 border-purple-200 hover:bg-purple-100' },
-  { id: 'MANAGER', name: 'Manager', color: 'bg-orange-50 border-orange-200 hover:bg-orange-100' }];
+  // Convert store stations to component format with colors and add Manager option
+  const stations = React.useMemo(() => {
+    const stationConfigs = storeStations.map(station => ({
+      id: station.name || station.station_name || '',
+      name: station.name || station.station_name || '',
+      color: `${getStationColor(station.name || station.station_name || '')} border-2`
+    }));
+
+    // Add Manager option for salary management
+    stationConfigs.push({
+      id: 'MANAGER',
+      name: 'Manager',
+      color: 'bg-orange-50 border-orange-200 hover:bg-orange-100 border-2'
+    });
+
+    return stationConfigs;
+  }, [storeStations, getStationColor]);
 
 
   // Form states for each station

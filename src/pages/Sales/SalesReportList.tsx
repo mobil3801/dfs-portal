@@ -49,7 +49,7 @@ const SalesReportList: React.FC = () => {
   const [reports, setReports] = useState<SalesReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStation, setSelectedStation] = useState('ALL_STATIONS');
+  const [selectedStation, setSelectedStation] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
@@ -417,7 +417,7 @@ const SalesReportList: React.FC = () => {
               <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">
                 No sales reports found
-                {selectedStation !== 'ALL_STATIONS' && selectedStation !== 'ALL' &&
+                {selectedStation !== 'ALL' &&
               <span> for {selectedStation}</span>
               }
               </p>

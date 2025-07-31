@@ -899,7 +899,7 @@ const fetchStations = async () => {
                     <SelectValue placeholder="Filter by station" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Stations</SelectItem>
+                    <SelectItem value="ALL">All Stations</SelectItem>
                     {stations.map((station) =>
                     <SelectItem key={station.id} value={station.id}>{station.name}</SelectItem>
                     )}

@@ -10,6 +10,7 @@ import { ShoppingCart, Save, ArrowLeft, Camera, Plus, Minus, Trash2 } from 'luci
 import { useNavigate, useParams } from 'react-router-dom';
 import ProductSearchBar from '@/components/ProductSearchBar';
 import ProductSelectionDialog from '@/components/ProductSelectionDialog';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface Product {
   ID: number;
@@ -43,10 +44,11 @@ interface OrderFormData {
 }
 
 const OrderForm: React.FC = () => {
+  const { stations } = useStationStore();
   const [selectedStation, setSelectedStation] = useState<string>('');
   const [formData, setFormData] = useState<OrderFormData>({
     order_number: '',
-    station: 'MOBIL',
+    station: stations.length > 0 ? stations[0].name : '',
     notes: '',
     items: [],
     total_amount: 0
@@ -62,7 +64,8 @@ const OrderForm: React.FC = () => {
   const { id } = useParams();
   const { showError, showSuccess, showInfo } = useErrorNotification();
 
-  const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
+  // Extract station names from store for compatibility with existing logic
+  const stationNames = stations.map(station => station.name);
 
   // Enhanced barcode scanner with camera access
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -353,7 +356,7 @@ const OrderForm: React.FC = () => {
                   <SelectValue placeholder="Choose a station to begin creating your order" />
                 </SelectTrigger>
                 <SelectContent>
-                  {stations.map((station) =>
+                  {stationNames.map((station) =>
                   <SelectItem key={station} value={station} className="text-lg p-3">
                       {station}
                     </SelectItem>

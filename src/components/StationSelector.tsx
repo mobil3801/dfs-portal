@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Building2, Globe, Loader2 } from 'lucide-react';
-import { useStationOptions } from '@/hooks/use-station-service';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface StationSelectorProps {
   onStationSelect: (station: string) => void;
@@ -18,22 +18,20 @@ const StationSelector: React.FC<StationSelectorProps> = ({
   description = "Choose the station to create a daily sales report for",
   includeAll = true
 }) => {
-  const { stationOptions, canSelectAll, loading, error } = useStationOptions(includeAll);
+  const { getFilteredStationOptions, canSelectAll, loading, error } = useStationStore();
 
-  // Filter out ALL option if user doesn't have permission and includeAll is true
-  const visibleStations = stationOptions.filter((station) =>
-  station.value !== 'ALL' || canSelectAll
-  );
+  // Get filtered station options based on permissions and includeAll setting
+  const visibleStations = getFilteredStationOptions(includeAll);
 
   const getStationIcon = (stationValue: string) => {
-    if (stationValue === 'ALL' || stationValue === 'ALL_STATIONS') {
+    if (stationValue === 'ALL') {
       return <Globe className="w-8 h-8" />;
     }
     return <MapPin className="w-8 h-8" />;
   };
 
   const getStationDescription = (stationValue: string) => {
-    if (stationValue === 'ALL' || stationValue === 'ALL_STATIONS') {
+    if (stationValue === 'ALL') {
       return 'View and manage all stations';
     }
 
@@ -50,7 +48,7 @@ const StationSelector: React.FC<StationSelectorProps> = ({
   };
 
   const getStationLocation = (stationValue: string) => {
-    if (stationValue === 'ALL' || stationValue === 'ALL_STATIONS') {
+    if (stationValue === 'ALL') {
       return 'All Locations';
     }
 
@@ -67,7 +65,7 @@ const StationSelector: React.FC<StationSelectorProps> = ({
   };
 
   const getButtonColorClass = (station: any) => {
-    if (station.value === 'ALL' || station.value === 'ALL_STATIONS') {
+    if (station.value === 'ALL') {
       return 'bg-gray-50 border-gray-300 hover:bg-gray-100';
     }
 
@@ -147,7 +145,7 @@ const StationSelector: React.FC<StationSelectorProps> = ({
               <div className="text-center">
                 <div className="font-semibold text-lg flex items-center justify-center space-x-2">
                   <span>{station.label}</span>
-                  {(station.value === 'ALL' || station.value === 'ALL_STATIONS') &&
+                  {(station.value === 'ALL') &&
                 <Badge variant="secondary" className="text-xs">
                       All
                     </Badge>
@@ -164,7 +162,7 @@ const StationSelector: React.FC<StationSelectorProps> = ({
           )}
         </div>
         
-        {includeAll && !canSelectAll &&
+        {includeAll && !canSelectAll() &&
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="text-sm text-blue-800">
               <strong>Note:</strong> The "ALL" option is available for Administrators and Management only.

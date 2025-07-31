@@ -121,7 +121,7 @@ export const useStationOptions = (includeAll: boolean = true) => {
 };
 
 /**
- * Hook for filtering logic when 'ALL_STATIONS' is selected
+ * Hook for filtering logic when 'ALL' is selected
  */
 export const useStationFilter = (selectedStation: string) => {
   const { userProfile } = useAuth();
@@ -150,7 +150,7 @@ export const useStationFilter = (selectedStation: string) => {
   }, [userProfile?.role, userProfile?.permissions, userProfile?.stationAccess]);
 
   const getStationFilters = useCallback(() => {
-    if (selectedStation === 'ALL_STATIONS' || selectedStation === 'ALL') {
+    if (selectedStation === 'ALL') {
       if (accessibleStations.length === 0) {
         return [{ name: 'station', op: 'Equal', value: '__NO_ACCESS__' }];
       }
@@ -166,7 +166,7 @@ export const useStationFilter = (selectedStation: string) => {
     return [{ name: 'station', op: 'Equal', value: selectedStation }];
   }, [selectedStation, accessibleStations]);
 
-  const shouldFilterByStation = selectedStation && selectedStation !== 'ALL_STATIONS' && selectedStation !== 'ALL';
+  const shouldFilterByStation = selectedStation && selectedStation !== 'ALL';
 
   const getAccessibleStationsFilter = useCallback(() => {
     return accessibleStations.map((station) => ({
@@ -179,7 +179,7 @@ export const useStationFilter = (selectedStation: string) => {
   return {
     stationFilters: getStationFilters(),
     shouldFilterByStation,
-    isAllSelected: selectedStation === 'ALL_STATIONS' || selectedStation === 'ALL',
+    isAllSelected: selectedStation === 'ALL',
     accessibleStations,
     accessibleStationsFilter: getAccessibleStationsFilter(),
     loading

@@ -167,7 +167,7 @@ class SupabaseStationService {
     // Add "All Stations" option if user has permission
     if (includeAll && this.canUserViewAll(userRole, userPermissions)) {
       options.unshift({
-        value: 'ALL_STATIONS',
+        value: 'ALL',
         label: 'All Stations',
         color: 'bg-indigo-600'
       });

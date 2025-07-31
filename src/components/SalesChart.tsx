@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { CalendarDays, TrendingUp, Building2 } from 'lucide-react';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface SalesData {
   date: string;
@@ -26,6 +27,7 @@ interface StationTotals {
 }
 
 const SalesChart: React.FC = () => {
+  const { stations } = useStationStore();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [stationTotals, setStationTotals] = useState<StationTotals[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +74,11 @@ const SalesChart: React.FC = () => {
 
       // Group data by date and station
       const dailyData: {[key: string]: any;} = {};
-      const stationSummary: {[key: string]: {fuel: number;convenience: number;total: number;};} = {
-        'MOBIL': { fuel: 0, convenience: 0, total: 0 },
-        'AMOCO ROSEDALE': { fuel: 0, convenience: 0, total: 0 },
-        'AMOCO BROOKLYN': { fuel: 0, convenience: 0, total: 0 }
-      };
+      // Initialize station summary dynamically from central store
+      const stationSummary: {[key: string]: {fuel: number;convenience: number;total: number;};} = {};
+      stations.forEach(station => {
+        stationSummary[station.name] = { fuel: 0, convenience: 0, total: 0 };
+      });
 
       // Process each report
       reports.forEach((report: any) => {

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useStationStore } from '@/hooks/use-station-store';
 import {
   BarChart,
   Bar,
@@ -100,9 +101,11 @@ interface ProductData {
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
-const STATIONS = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN'];
 
 const ComprehensiveDashboard: React.FC = () => {
+  const { stations } = useStationStore();
+  // Extract station names from store for compatibility with existing logic
+  const STATIONS = stations.map(station => station.name);
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [salaryData, setSalaryData] = useState<SalaryData[]>([]);
   const [employeeData, setEmployeeData] = useState<EmployeeData[]>([]);

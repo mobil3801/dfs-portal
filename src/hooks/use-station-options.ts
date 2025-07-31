@@ -12,7 +12,7 @@ export interface StationOption {
 /**
  * Hook to get station options based on user permissions
  * Now uses the centralized station service for consistency
- * Automatically includes 'ALL_STATIONS' option for users with appropriate permissions
+ * Automatically includes 'ALL' option for users with appropriate permissions
  */
 export const useStationOptions = (includeAll: boolean = true) => {
   const { userProfile } = useAuth();
@@ -78,7 +78,7 @@ export const useStationOptions = (includeAll: boolean = true) => {
 };
 
 /**
- * Hook for filtering logic when 'ALL_STATIONS' is selected
+ * Hook for filtering logic when 'ALL' is selected
  * Now uses the centralized station service
  */
 export const useStationFilter = (selectedStation: string) => {

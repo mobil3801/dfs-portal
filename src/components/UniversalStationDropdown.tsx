@@ -87,8 +87,8 @@ const UniversalStationDropdown: React.FC<UniversalStationDropdownProps> = ({
 
   // Calculate accessible stations count for "All Stations" badge
   useEffect(() => {
-    const nonAllOptions = filteredOptions.filter(opt => 
-      opt.value !== 'ALL_STATIONS' && opt.value !== 'ALL'
+    const nonAllOptions = filteredOptions.filter(opt =>
+      opt.value !== 'ALL'
     );
     setAccessibleStationsCount(nonAllOptions.length);
   }, [filteredOptions]);
@@ -100,7 +100,7 @@ const UniversalStationDropdown: React.FC<UniversalStationDropdownProps> = ({
     if (!currentValue) return null;
 
     // Handle "All Stations" option
-    if (currentValue === 'ALL_STATIONS' || currentValue === 'ALL') {
+    if (currentValue === 'ALL') {
       return (
         <div className="flex items-center space-x-2">
           <Globe className="w-4 h-4 text-indigo-600" />
@@ -244,7 +244,7 @@ const UniversalStationDropdown: React.FC<UniversalStationDropdownProps> = ({
               className="cursor-pointer hover:bg-gray-50"
             >
               <div className="flex items-center space-x-2 w-full">
-                {station.value === 'ALL_STATIONS' || station.value === 'ALL' ? (
+                {station.value === 'ALL' ? (
                   <>
                     <Globe className="w-4 h-4 text-indigo-600" />
                     <div className="flex items-center justify-between w-full">

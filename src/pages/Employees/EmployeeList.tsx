@@ -10,6 +10,7 @@ import { Search, Edit, Trash2, Users, Mail, Phone, Plus, Eye, Download, User, Fi
 import { useNavigate } from 'react-router-dom';
 import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStationStore } from '@/hooks/use-station-store';
 import ViewModal from '@/components/ViewModal';
 import { useListKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { motion } from 'motion/react';
@@ -62,6 +63,9 @@ const EmployeeList: React.FC = () => {
   // Authentication and Admin Check
   const { isAdmin } = useAuth();
   const isAdminUser = isAdmin();
+
+  // Central station store for real-time updates
+  const { getFilteredStationOptions } = useStationStore();
 
   // Module Access Control
   const {
@@ -647,10 +651,11 @@ const EmployeeList: React.FC = () => {
                   <SelectValue placeholder="Select Station" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Stations</SelectItem>
-                  <SelectItem value="MOBIL">MOBIL</SelectItem>
-                  <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                  <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
+                  {getFilteredStationOptions(true).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
@@ -852,10 +857,11 @@ const EmployeeList: React.FC = () => {
                   <SelectValue placeholder="Select Station" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Select Any Station</SelectItem>
-                  <SelectItem value="MOBIL">MOBIL</SelectItem>
-                  <SelectItem value="AMOCO ROSEDALE">AMOCO ROSEDALE</SelectItem>
-                  <SelectItem value="AMOCO BROOKLYN">AMOCO BROOKLYN</SelectItem>
+                  {getFilteredStationOptions(true).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
