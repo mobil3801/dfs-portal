@@ -22,7 +22,7 @@
             "runtimeArgs": [
                 "--remote-debugging-port=9222"
             ],
-            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html",
             "presentation": {
                 "hidden": true
             }
@@ -35,7 +35,7 @@
                 "--headless",
                 "--remote-debugging-port=9222"
             ],
-            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html",
             "presentation": {
                 "hidden": true
             }
@@ -44,10 +44,16 @@
             "type": "vscode-edge-devtools.debug",
             "name": "Open Edge DevTools",
             "request": "attach",
-            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html", // Provide your project's url to finish configuring
+            "url": "c:\\Users\\MOBIN (Work)\\.blackbox-editor\\extensions\\ms-edgedevtools.vscode-edge-devtools-2.1.9\\out\\startpage\\index.html",
             "presentation": {
                 "hidden": true
             }
+        },
+        {
+            "type": "msedge",
+            "name": "http://127.0.0.1:3000",
+            "request": "launch",
+            "url": "http://127.0.0.1:3000"
         }
     ],
     "compounds": [
