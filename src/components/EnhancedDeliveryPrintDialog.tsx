@@ -56,7 +56,7 @@ const EnhancedDeliveryPrintDialog: React.FC<EnhancedDeliveryPrintDialogProps> = 
   if (!delivery) return null;
 
   // Use centralized station store for color functions
-  const { getStationBadgeColor } = useStationStore();
+  const { getStationBadgeColor, getStationPrintColor } = useStationStore();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -340,7 +340,7 @@ const EnhancedDeliveryPrintDialog: React.FC<EnhancedDeliveryPrintDialogProps> = 
             <div class="meta-item">
               <div class="meta-label">Station</div>
               <div class="meta-value">
-                <span class="station-badge" style="background: ${delivery.station === 'MOBIL' ? '#ef4444' : delivery.station === 'AMOCO ROSEDALE' ? '#3b82f6' : '#10b981'}">${delivery.station}</span>
+                <span class="station-badge" style="background: ${getStationPrintColor(delivery.station)}">${delivery.station}</span>
               </div>
             </div>
             <div class="meta-item">

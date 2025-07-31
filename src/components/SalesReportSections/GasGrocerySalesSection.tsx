@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import { Fuel, ShoppingCart, Info } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface GasGrocerySalesSectionProps {
   station: string;
@@ -28,7 +29,11 @@ const GasGrocerySalesSection: React.FC<GasGrocerySalesSectionProps> = ({
   onChange
 }) => {
   const isMobile = useIsMobile();
-  const isMobil = station === 'MOBIL';
+  const { stations } = useStationStore();
+  
+  // Check if station supports EBT by looking at station data
+  const stationData = stations.find(s => (s.name || s.station_name) === station);
+  const supportsEBT = stationData?.supports_ebt || station === 'MOBIL'; // Fallback for existing data
 
   // Total Sales - Auto calculated (Credit Card + Debit Card + Mobile Payment + Cash + Grocery)
   const totalSales = values.creditCardAmount + values.debitCardAmount + values.mobileAmount + values.cashAmount + values.grocerySales;
@@ -156,7 +161,7 @@ const GasGrocerySalesSection: React.FC<GasGrocerySalesSectionProps> = ({
                 required />
 
             </div>
-            {isMobil &&
+            {supportsEBT &&
             <div className="space-y-2">
                 <Label htmlFor="ebt">EBT ($) *</Label>
                 <NumberInput
@@ -178,7 +183,7 @@ const GasGrocerySalesSection: React.FC<GasGrocerySalesSectionProps> = ({
               <div className="text-2xl font-bold text-green-800">${totalGrocerySales.toFixed(2)}</div>
             </div>
             <div className="text-sm text-gray-600 mt-1">
-              Cash Sales (${(values.groceryCashSales || 0).toFixed(2)}) + Credit/Debit Card (${(values.groceryCardSales || 0).toFixed(2)}){isMobil ? ` + EBT (${(values.ebtSales || 0).toFixed(2)})` : ''} = ${totalGrocerySales.toFixed(2)}
+              Cash Sales (${(values.groceryCashSales || 0).toFixed(2)}) + Credit/Debit Card (${(values.groceryCardSales || 0).toFixed(2)}){supportsEBT ? ` + EBT (${(values.ebtSales || 0).toFixed(2)})` : ''} = ${totalGrocerySales.toFixed(2)}
             </div>
             {/* Sync notification */}
             {totalGrocerySales !== values.grocerySales &&

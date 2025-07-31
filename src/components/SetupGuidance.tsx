@@ -63,6 +63,7 @@ const SetupGuidance: React.FC = () => {
     {
       id: 'station-config',
       title: 'Configure Station Information',
+      // INTENTIONALLY HARDCODED: Setup guidance text mentioning specific stations
       description: 'Set up details for MOBIL, AMOCO ROSEDALE, and AMOCO BROOKLYN',
       icon: <Building className="h-5 w-5" />,
       status: await checkStationConfigStatus(),

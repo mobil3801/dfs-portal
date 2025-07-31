@@ -63,7 +63,7 @@ const EnhancedSalesReportPrintDialog: React.FC<EnhancedSalesReportPrintDialogPro
   if (!report) return null;
 
   // Use centralized station store for color functions
-  const { getStationBadgeColor } = useStationStore();
+  const { getStationBadgeColor, getStationPrintColor, stations } = useStationStore();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -377,7 +377,7 @@ const EnhancedSalesReportPrintDialog: React.FC<EnhancedSalesReportPrintDialogPro
             <div class="meta-item">
               <div class="meta-label">Station</div>
               <div class="meta-value">
-                <span class="station-badge" style="background: ${report.station === 'MOBIL' ? '#ef4444' : report.station === 'AMOCO ROSEDALE' ? '#3b82f6' : '#10b981'}">${report.station}</span>
+                <span class="station-badge" style="background: ${getStationPrintColor(report.station)}">${report.station}</span>
               </div>
             </div>
             <div class="meta-item">
@@ -459,12 +459,17 @@ const EnhancedSalesReportPrintDialog: React.FC<EnhancedSalesReportPrintDialogPro
                   <div class="data-label">Grocery Sales</div>
                   <div class="data-value currency">${formatCurrency(report.grocery_sales)}</div>
                 </div>
-                ${report.station === 'MOBIL' ? `
+                ${(() => {
+                   // Check if station supports EBT by looking at station data
+                   const stationData = stations.find(s => (s.name || s.station_name) === report.station);
+                   const supportsEBT = stationData?.supports_ebt || report.station === 'MOBIL'; // Fallback for existing data
+                   return supportsEBT ? `
                 <div class="data-card">
                   <div class="data-label">EBT Sales</div>
                   <div class="data-value currency">${formatCurrency(report.ebt_sales)}</div>
                 </div>
-                ` : ''}
+                ` : '';
+                 })()}
                 <div class="data-card">
                   <div class="data-label">Lottery Net</div>
                   <div class="data-value currency">${formatCurrency(report.lottery_net_sales)}</div>

@@ -214,6 +214,8 @@ const AdminFirstTimeSetup: React.FC = () => {
     try {
       setLoading(true);
 
+      // INTENTIONALLY HARDCODED: Default station setup for initial system configuration
+      // These station names are part of the setup process and should remain hardcoded
       const defaultStations = [
       {
         station_name: 'MOBIL',

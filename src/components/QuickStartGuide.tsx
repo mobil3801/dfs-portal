@@ -50,6 +50,7 @@ const QuickStartGuide: React.FC = () => {
   {
     id: 'setup-stations',
     title: 'Configure Your Gas Stations',
+    // INTENTIONALLY HARDCODED: Setup guidance text mentioning specific stations
     description: 'Add information for MOBIL, AMOCO ROSEDALE, and AMOCO BROOKLYN',
     icon: <Building className="h-5 w-5" />,
     duration: '10 min',

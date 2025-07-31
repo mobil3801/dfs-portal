@@ -33,6 +33,8 @@ const InitialStationSetup: React.FC = () => {
   const [editingStation, setEditingStation] = useState<Station | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  // INTENTIONALLY HARDCODED: Default station setup for initial system configuration
+  // These station names are part of the setup process and should remain hardcoded
   const defaultStations = [
   {
     station_name: 'MOBIL',
@@ -352,6 +354,7 @@ const InitialStationSetup: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold">Station Configuration</h2>
           <p className="text-gray-600">
+            {/* INTENTIONALLY HARDCODED: Setup guidance text mentioning specific stations */}
             Set up your gas stations: MOBIL, AMOCO ROSEDALE, and AMOCO BROOKLYN
           </p>
         </div>
@@ -374,6 +377,7 @@ const InitialStationSetup: React.FC = () => {
       <Alert>
           <Building className="h-4 w-4" />
           <AlertDescription>
+            {/* INTENTIONALLY HARDCODED: Setup guidance text mentioning specific stations */}
             <strong>Get Started:</strong> Click "Setup Default Stations" to create the three main stations 
             (MOBIL, AMOCO ROSEDALE, AMOCO BROOKLYN), then update their details with your specific information.
           </AlertDescription>
