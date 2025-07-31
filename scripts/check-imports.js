@@ -58,22 +58,78 @@ class ImportChecker {
   }
 
   checkImportSyntax(content, filePath) {
+    // Parse multi-line import statements properly - include both named imports and side-effect imports
+    const namedImportRegex = /import\s+(?:(?:\*\s+as\s+\w+)|(?:\w+)|(?:\{[^}]*\}))\s+from\s+['"`][^'"`]+['"`]\s*;?/gs;
+    const sideEffectImportRegex = /import\s+['"`][^'"`]+['"`]\s*;?/gs;
+    
+    // Find all complete imports (both named and side-effect)
+    const namedImports = [...content.matchAll(namedImportRegex)];
+    const sideEffectImports = [...content.matchAll(sideEffectImportRegex)];
+    const allCompleteImports = [...namedImports, ...sideEffectImports];
+    
+    const completeImportRanges = allCompleteImports.map(match => ({
+      start: match.index,
+      end: match.index + match[0].length
+    }));
+
+    // Check for potentially incomplete imports (but exclude multi-line ones)
     const lines = content.split('\n');
+    let currentPos = 0;
 
     lines.forEach((line, index) => {
       const lineNumber = index + 1;
+      const lineStart = currentPos;
+      const lineEnd = currentPos + line.length;
+      
+      // Skip to next line position
+      currentPos = lineEnd + 1; // +1 for newline character
 
-      // Check for incomplete import statements
-      if (line.trim().startsWith('import') && !line.includes(';') && !line.includes('from')) {
-        this.errors.push({
-          file: filePath,
-          line: lineNumber,
-          type: 'INCOMPLETE_IMPORT',
-          message: `Incomplete import statement: ${line.trim()}`
-        });
+      // Only check lines that START with actual import statements (exclude method calls and import.meta)
+      const trimmedLine = line.trim();
+      if ((trimmedLine.startsWith('import ') || trimmedLine.startsWith('import{') || trimmedLine.startsWith('import\t')) &&
+          !trimmedLine.startsWith('import.meta') && trimmedLine.length < 200) {
+        // Check if this line is part of a complete multi-line import
+        const isPartOfCompleteImport = completeImportRanges.some(range =>
+          lineStart >= range.start && lineEnd <= range.end
+        );
+
+        // Only flag as incomplete if it's NOT part of a complete import and looks genuinely incomplete
+        if (!isPartOfCompleteImport) {
+          const hasFrom = trimmedLine.includes('from');
+          const hasEndingSemicolon = trimmedLine.endsWith(';');
+          const hasQuotes = /['"`]/.test(trimmedLine);
+          
+          // Check if it's a side-effect import (import 'module' or import './file')
+          const isSideEffectImport = /^import\s+['"`][^'"`]+['"`]\s*;?\s*$/.test(trimmedLine);
+          
+          // Skip if it's already a valid side-effect import
+          if (isSideEffectImport) {
+            // Valid side-effect import, don't flag
+            return;
+          }
+          
+          // Flag as incomplete only if it's clearly malformed
+          if (hasFrom && hasQuotes && !hasEndingSemicolon) {
+            // This might be a complete import missing just a semicolon - not critical
+            this.warnings.push({
+              file: filePath,
+              line: lineNumber,
+              type: 'MISSING_SEMICOLON',
+              message: `Import statement missing semicolon: ${trimmedLine}`
+            });
+          } else if (trimmedLine === 'import' || (trimmedLine.startsWith('import') && !hasFrom && !trimmedLine.includes('{') && !hasQuotes)) {
+            // This is genuinely incomplete (but exclude lines with quotes which might be side-effect imports)
+            this.errors.push({
+              file: filePath,
+              line: lineNumber,
+              type: 'INCOMPLETE_IMPORT',
+              message: `Incomplete import statement: ${trimmedLine}`
+            });
+          }
+        }
       }
 
-      // Check for incorrect import paths
+      // Check for incorrect import paths (keep existing logic)
       const importMatch = line.match(/from ['"`]([^'"`]+)['"`]/);
       if (importMatch) {
         const importPath = importMatch[1];
