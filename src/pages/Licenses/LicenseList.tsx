@@ -10,6 +10,7 @@ import { Plus, Search, Edit, Trash2, FileText, AlertTriangle, CheckCircle, Print
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import EnhancedLicensePrintDialog from '@/components/EnhancedLicensePrintDialog';
+import { useStationStore } from '@/hooks/use-station-store';
 import { smsService } from '@/services/smsService';
 import licenseAlertService from '@/services/licenseAlertService';
 
@@ -358,20 +359,8 @@ const LicenseList: React.FC = () => {
     return colors[category as keyof typeof colors] || 'bg-gray-500';
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-600';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-600';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-600';
-      case 'ALL':
-        return 'bg-gray-600';
-      default:
-        return 'bg-gray-600';
-    }
-  };
+  // Use centralized station color mapping
+  const { getStationBadgeColor } = useStationStore();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';

@@ -65,7 +65,7 @@ const EmployeeList: React.FC = () => {
   const isAdminUser = isAdmin();
 
   // Central station store for real-time updates
-  const { getFilteredStationOptions } = useStationStore();
+  const { getFilteredStationOptions, getStationBadgeColor } = useStationStore();
 
   // Module Access Control
   const {
@@ -324,18 +324,7 @@ const EmployeeList: React.FC = () => {
     handleCreateEmployee
   );
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-500';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-500';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+  // Station color mapping now handled by centralized store
 
   const getEmploymentStatusColor = (status: string) => {
     switch (status) {

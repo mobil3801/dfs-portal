@@ -65,18 +65,8 @@ const EnhancedStationSelector: React.FC<EnhancedStationSelectorProps> = ({
   };
 
   const getButtonColorClass = (station: any) => {
-    if (station.value === 'ALL') {
-      return 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100';
-    }
-
-    // Use the station's color from the central service
-    const colorMap: {[key: string]: string;} = {
-      'MOBIL': 'bg-blue-50 border-blue-200 hover:bg-blue-100',
-      'AMOCO ROSEDALE': 'bg-green-50 border-green-200 hover:bg-green-100',
-      'AMOCO BROOKLYN': 'bg-purple-50 border-purple-200 hover:bg-purple-100'
-    };
-
-    return colorMap[station.value] || 'bg-gray-50 border-gray-200 hover:bg-gray-100';
+    // Use centralized color mapping for consistency across all station selectors
+    return getStationBackgroundColor(station.value);
   };
 
   if (loading) {

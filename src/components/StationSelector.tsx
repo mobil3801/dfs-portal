@@ -65,20 +65,8 @@ const StationSelector: React.FC<StationSelectorProps> = ({
   };
 
   const getButtonColorClass = (station: any) => {
-    if (station.value === 'ALL') {
-      return 'bg-gray-50 border-gray-300 hover:bg-gray-100';
-    }
-
-    switch (station.value) {
-      case 'MOBIL':
-        return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-50 border-green-200 hover:bg-green-100';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
-      default:
-        return 'bg-gray-50 border-gray-200 hover:bg-gray-100';
-    }
+    // Use centralized color mapping for consistency
+    return getStationBackgroundColor(station.value);
   };
 
   if (loading) {

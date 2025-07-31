@@ -204,18 +204,8 @@ const SalesReportList: React.FC = () => {
 
   const canAddReport = userProfile?.role === 'employee' || isAdmin();
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-500';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-500';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+  // Use centralized station color mapping
+  const { getStationBadgeColor } = useStationStore();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';

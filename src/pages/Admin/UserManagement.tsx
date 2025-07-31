@@ -26,6 +26,7 @@ import BulkRoleManager from '@/components/BulkRoleManager';
 import RoleOverview from '@/components/RoleOverview';
 import { supabase } from '@/lib/supabase';
 import { safeToLowerCase, safeString, errorLog, debugLog } from '@/utils/safe-string-utils';
+import { useStationStore } from '@/hooks/use-station-store';
 import {
   Users,
   Plus,

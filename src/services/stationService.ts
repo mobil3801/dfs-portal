@@ -132,15 +132,107 @@ class StationService {
   }
 
   /**
-   * Get station color based on name
+   * Get station color based on name and type
+   * Provides consistent color mapping across all station-related UI elements
    */
-  getStationColor(stationName: string): string {
-    const colorMap: {[key: string]: string;} = {
-      'MOBIL': 'bg-blue-500',
-      'AMOCO ROSEDALE': 'bg-green-500',
-      'AMOCO BROOKLYN': 'bg-purple-500'
+  getStationColor(stationName: string, type: 'badge' | 'background' | 'text-badge' | 'border' | 'print' = 'badge'): string {
+    // Normalize station name to handle case variations
+    const normalizedName = stationName?.toUpperCase().trim();
+    
+    // Define comprehensive color schemes for each station
+    const colorSchemes: {[key: string]: {[key: string]: string}} = {
+      'MOBIL': {
+        badge: 'bg-blue-500',                                     // Solid badge background
+        background: 'bg-blue-50 border-blue-200 hover:bg-blue-100',  // Light background with border and hover
+        'text-badge': 'bg-blue-100 text-blue-800',              // Light badge with colored text
+        border: 'border-blue-200',                              // Border only
+        print: 'bg-blue-500 text-white'                         // Print-specific styling
+      },
+      'AMOCO ROSEDALE': {
+        badge: 'bg-green-500',
+        background: 'bg-green-50 border-green-200 hover:bg-green-100',
+        'text-badge': 'bg-green-100 text-green-800',
+        border: 'border-green-200',
+        print: 'bg-green-500 text-white'
+      },
+      'AMOCO BROOKLYN': {
+        badge: 'bg-purple-500',
+        background: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+        'text-badge': 'bg-purple-100 text-purple-800',
+        border: 'border-purple-200',
+        print: 'bg-purple-500 text-white'
+      },
+      'ALL': {
+        badge: 'bg-indigo-600',
+        background: 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
+        'text-badge': 'bg-indigo-100 text-indigo-800',
+        border: 'border-indigo-200',
+        print: 'bg-indigo-600 text-white'
+      }
     };
-    return colorMap[stationName] || 'bg-gray-500';
+
+    // Default fallback colors for unknown stations
+    const defaultColors = {
+      badge: 'bg-gray-500',
+      background: 'bg-gray-50 border-gray-200 hover:bg-gray-100',
+      'text-badge': 'bg-gray-100 text-gray-800',
+      border: 'border-gray-200',
+      print: 'bg-gray-500 text-white'
+    };
+
+    const stationColors = colorSchemes[normalizedName] || defaultColors;
+    return stationColors[type] || stationColors.badge;
+  }
+
+  /**
+   * Get station color for badges (backward compatibility)
+   */
+  getStationBadgeColor(stationName: string): string {
+    return this.getStationColor(stationName, 'badge');
+  }
+
+  /**
+   * Get station color with text for light badges
+   */
+  getStationTextBadgeColor(stationName: string): string {
+    return this.getStationColor(stationName, 'text-badge');
+  }
+
+  /**
+   * Get station background color for interactive elements
+   */
+  getStationBackgroundColor(stationName: string): string {
+    return this.getStationColor(stationName, 'background');
+  }
+
+  /**
+   * Get station color for print contexts
+   */
+  getStationPrintColor(stationName: string): string {
+    return this.getStationColor(stationName, 'print');
+  }
+
+  /**
+   * Get all available stations with their color information
+   */
+  getStationColorMap(): {[key: string]: {name: string; colors: {[key: string]: string}}} {
+    const stations = ['MOBIL', 'AMOCO ROSEDALE', 'AMOCO BROOKLYN', 'ALL'];
+    const colorMap: {[key: string]: {name: string; colors: {[key: string]: string}}} = {};
+    
+    stations.forEach(station => {
+      colorMap[station] = {
+        name: station,
+        colors: {
+          badge: this.getStationColor(station, 'badge'),
+          background: this.getStationColor(station, 'background'),
+          textBadge: this.getStationColor(station, 'text-badge'),
+          border: this.getStationColor(station, 'border'),
+          print: this.getStationColor(station, 'print')
+        }
+      };
+    });
+    
+    return colorMap;
   }
 
   /**

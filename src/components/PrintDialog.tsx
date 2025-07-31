@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Printer } from 'lucide-react';
+import { useStationStore } from '@/hooks/use-station-store';
 
 interface License {
   ID: number;
@@ -26,6 +27,9 @@ interface PrintDialogProps {
 }
 
 const PrintDialog: React.FC<PrintDialogProps> = ({ license, isOpen, onClose }) => {
+  // Use centralized station color mapping for print
+  const { getStationPrintColor } = useStationStore();
+
   const handlePrint = () => {
     window.print();
   };
@@ -60,20 +64,7 @@ const PrintDialog: React.FC<PrintDialogProps> = ({ license, isOpen, onClose }) =
     return colors[category as keyof typeof colors] || 'bg-gray-500';
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-600';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-600';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-600';
-      case 'ALL':
-        return 'bg-gray-600';
-      default:
-        return 'bg-gray-600';
-    }
-  };
+  // Station color mapping now handled by centralized store
 
   if (!license) return null;
 
@@ -147,7 +138,7 @@ const PrintDialog: React.FC<PrintDialogProps> = ({ license, isOpen, onClose }) =
                   <div>
                     <label className="text-sm font-medium text-gray-600 print:text-xs">Station</label>
                     <div className="mt-1">
-                      <Badge className={`text-white ${getStationBadgeColor(license.station)} print:bg-gray-600 print:text-white`}>
+                      <Badge className={`text-white ${getStationPrintColor(license.station)} print:bg-gray-600 print:text-white`}>
                         {license.station}
                       </Badge>
                     </div>

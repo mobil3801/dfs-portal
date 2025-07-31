@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, Truck, Filter, Download, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStationStore } from '@/hooks/use-station-store';
 
 import EnhancedDeliveryPrintDialog from '@/components/EnhancedDeliveryPrintDialog';
 
@@ -197,18 +198,8 @@ const DeliveryList: React.FC = () => {
     return record.regular_tank_volume + record.plus_tank_volume + record.super_tank_volume;
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station) {
-      case 'MOBIL':
-        return 'bg-red-100 text-red-800';
-      case 'AMOCO ROSEDALE':
-        return 'bg-blue-100 text-blue-800';
-      case 'AMOCO BROOKLYN':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Use centralized station text badge color mapping
+  const { getStationTextBadgeColor } = useStationStore();
 
   const handleViewReport = (delivery: DeliveryRecord) => {
     setSelectedDelivery(delivery);
@@ -365,7 +356,7 @@ const DeliveryList: React.FC = () => {
                           {delivery.bol_number || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStationBadgeColor(delivery.station)}>
+                          <Badge className={getStationTextBadgeColor(delivery.station)}>
                             {delivery.station}
                           </Badge>
                         </TableCell>

@@ -115,11 +115,14 @@ const EnhancedLicensePrintDialog: React.FC<EnhancedLicensePrintDialogProps> = ({
   };
 
   const getStationInfo = (station: string) => {
+    // Use centralized station color mapping for print consistency
+    const { getStationPrintColor } = useStationStore();
+    
     const stationMap = {
-      'MOBIL': { color: 'bg-red-500', description: 'Mobil Gas Station' },
-      'AMOCO ROSEDALE': { color: 'bg-blue-500', description: 'Amoco Rosedale Station' },
-      'AMOCO BROOKLYN': { color: 'bg-green-500', description: 'Amoco Brooklyn Station' },
-      'ALL': { color: 'bg-gray-500', description: 'All Station Locations' }
+      'MOBIL': { description: 'Mobil Gas Station' },
+      'AMOCO ROSEDALE': { description: 'Amoco Rosedale Station' },
+      'AMOCO BROOKLYN': { description: 'Amoco Brooklyn Station' },
+      'ALL': { description: 'All Station Locations' }
     };
     return stationMap[station as keyof typeof stationMap] || { color: 'bg-gray-500', description: station };
   };

@@ -307,8 +307,13 @@ export const useStationStore = () => {
     getFilteredStationOptions,
     isDataFresh: Date.now() - localStore.lastUpdated < 120000,
 
-    // Utility functions
+    // Utility functions - Station color mapping (centralized)
     getStationColor: stationService.getStationColor.bind(stationService),
+    getStationBadgeColor: stationService.getStationBadgeColor.bind(stationService),
+    getStationTextBadgeColor: stationService.getStationTextBadgeColor.bind(stationService),
+    getStationBackgroundColor: stationService.getStationBackgroundColor.bind(stationService),
+    getStationPrintColor: stationService.getStationPrintColor.bind(stationService),
+    getStationColorMap: stationService.getStationColorMap.bind(stationService),
   canSelectAll: () => {
     const permissionsArray = (() => {
       if (!userProfile?.detailed_permissions) return [];

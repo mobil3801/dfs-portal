@@ -227,18 +227,8 @@ const OrderList: React.FC = () => {
     }
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station.toUpperCase()) {
-      case 'MOBIL':
-        return 'bg-blue-600';
-      case 'AMOCO ROSEDALE':
-        return 'bg-green-600';
-      case 'AMOCO BROOKLYN':
-        return 'bg-purple-600';
-      default:
-        return 'bg-gray-600';
-    }
-  };
+  // Use centralized station color mapping
+  const { getStationBadgeColor } = useStationStore();
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';

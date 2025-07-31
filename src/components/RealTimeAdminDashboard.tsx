@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStationStore } from '@/hooks/use-station-store';
 import CreateUserDialog from '@/components/CreateUserDialog';
 
 interface UserProfile {
@@ -251,15 +252,8 @@ const RealTimeAdminDashboard = () => {
     }
   };
 
-  const getStationBadgeColor = (station: string) => {
-    switch (station) {
-      case 'ALL':return 'bg-purple-100 text-purple-800';
-      case 'MOBIL':return 'bg-blue-100 text-blue-800';
-      case 'AMOCO ROSEDALE':return 'bg-orange-100 text-orange-800';
-      case 'AMOCO BROOKLYN':return 'bg-teal-100 text-teal-800';
-      default:return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Use centralized station color mapping
+  const { getStationTextBadgeColor } = useStationStore();
 
   if (loading) {
     return (
