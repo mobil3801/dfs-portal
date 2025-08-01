@@ -22,7 +22,7 @@ import {
   Hash,
   Clock } from
 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ViewModalField {
   key: string;

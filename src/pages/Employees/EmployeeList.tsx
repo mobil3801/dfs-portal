@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStationStore } from '@/hooks/use-station-store';
 import ViewModal from '@/components/ViewModal';
 import { useListKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import ResponsiveTable from '@/components/ResponsiveTable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ProfilePicture from '@/components/ProfilePicture';

@@ -17,7 +17,7 @@ import {
   Users,
   Zap } from
 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAccess } from '@/hooks/use-admin-access';
 

@@ -11,7 +11,7 @@ import { useModuleAccess } from '@/contexts/ModuleAccessContext';
 import { useAuth } from '@/contexts/AuthContext';
 import ViewModal from '@/components/ViewModal';
 import { useListKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface Vendor {
   ID: number;

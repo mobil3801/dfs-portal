@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
