@@ -16,6 +16,7 @@ import { ResponsiveTable, ResponsiveStack } from '@/components/ResponsiveWrapper
 import { useResponsiveLayout } from '@/hooks/use-mobile';
 import ProductCards from '@/components/ProductCards';
 import { generateSafeKey, safeMap } from '@/utils/invariantSafeHelper';
+import ProductsApiDiagnostic from '@/components/ProductsApiDiagnostic';
 
 interface Product {
   ID: number;
@@ -729,6 +730,13 @@ const ProductList: React.FC = () => {
               disabled={!debouncedSearchTerm && !canCreateProduct}>
                 {debouncedSearchTerm ? 'Clear Search' : canCreateProduct ? 'Add Your First Product' : 'No Create Permission'}
               </Button>
+              
+              {/* Add diagnostic component when no products found and not searching */}
+              {!debouncedSearchTerm && (
+                <div className="mt-8">
+                  <ProductsApiDiagnostic />
+                </div>
+              )}
             </div> :
 
           responsive.isMobile ?

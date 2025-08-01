@@ -16,6 +16,8 @@ import StationDropdown from '@/components/StationDropdown';
 import ProfilePictureUpload from '@/components/ProfilePictureUpload';
 import DocumentPreview from '@/components/DocumentPreview';
 import InstantIDDocumentUpload from '@/components/InstantIDDocumentUpload';
+import EmployeeApiDiagnostic from '@/components/EmployeeApiDiagnostic';
+import { testEmployeeIntegration } from '@/utils/testEmployeeIntegration';
 import { displayPhoneNumber, formatPhoneNumber } from '@/utils/phoneFormatter';
 
 
@@ -1229,6 +1231,53 @@ const EmployeeForm: React.FC = () => {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Employee API Diagnostic Tool - Always available for testing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="w-5 h-5" />
+            <span>Employee Integration Diagnostic</span>
+          </CardTitle>
+          <CardDescription>
+            Test employee creation, file upload, and database integration to ensure Supabase connectivity
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <EmployeeApiDiagnostic />
+          
+          {/* Console Test Alternative */}
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-medium mb-2">Alternative Console Test</h4>
+            <p className="text-xs text-gray-600 mb-3">
+              If the above diagnostic doesn't work, run this direct console test:
+            </p>
+            <div className="flex items-center space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  console.log('🔍 Running Employee Integration Test...');
+                  testEmployeeIntegration().then((results) => {
+                    console.log('📊 Test completed. Check console for detailed results.');
+                  }).catch((error) => {
+                    console.error('💥 Test failed:', error);
+                  });
+                }}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Run Console Test
+              </Button>
+              <span className="text-xs text-gray-500">
+                Open browser console (F12) to see detailed test results
+              </span>
+            </div>
+            <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono">
+              Press F12 → Console → Click "Run Console Test" → Check results
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>);
