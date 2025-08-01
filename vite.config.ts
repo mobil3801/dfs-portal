@@ -6,7 +6,9 @@ import path from 'node:path';
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080
+    port: 8080,
+    strictPort: false, // Allow Vite to use next available port if 8080 is busy
+    open: true // Automatically open browser when server starts
   },
   plugins: [
   react()],

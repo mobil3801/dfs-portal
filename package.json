@@ -31,7 +31,9 @@
     "docker:build": "docker build -t dfs-manager-portal .",
     "docker:run": "docker run -p 80:80 dfs-manager-portal",
     "docker:compose": "docker-compose up -d",
-    "test": "jest"
+    "test": "jest",
+    "fix-port": "scripts/fix-port-conflicts.bat",
+    "dev:fix": "npm run fix-port"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
