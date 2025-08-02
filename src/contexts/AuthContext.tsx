@@ -198,7 +198,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     setIsLoading(true);
     await safeFetchUserData(true);
     setIsLoading(false);
-  }, []);
+  }, [safeFetchUserData]);
 
   const initializeAuth = async () => {
     setIsLoading(true);
