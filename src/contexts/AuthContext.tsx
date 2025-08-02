@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdapter } from '@/services/supabase/supabaseAdapter';
@@ -85,9 +85,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
 
   const isAuthenticated = !!user && !!userProfile;
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setAuthError(null);
-  };
+  }, []);
 
   const safeFetchUserData = async (showErrors = false): Promise<{success: boolean;userData?: User;}> => {
     try {
@@ -194,11 +194,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     }
   };
 
-  const refreshUserData = async (): Promise<void> => {
+  const refreshUserData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     await safeFetchUserData(true);
     setIsLoading(false);
-  };
+  }, [safeFetchUserData]);
 
   const initializeAuth = async () => {
     setIsLoading(true);
@@ -402,7 +402,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     }
   };
 
-  const hasPermission = (action: string, resource?: string): boolean => {
+  const hasPermission = useCallback((action: string, resource?: string): boolean => {
     if (!userProfile) {
       return false;
     }
@@ -455,12 +455,12 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     }
 
     return false;
-  };
+  }, [userProfile]);
 
-  const isAdmin = (): boolean => {
+  const isAdmin = useCallback((): boolean => {
     // Check both database enum value 'admin' and legacy values for backward compatibility
     return userProfile?.role === 'admin';
-  };
+  }, [userProfile]);
 
   // Dual role checking - verify role from both Supabase auth metadata and database
   const checkRoleFromBothSources = (roleToCheck: string): boolean => {
@@ -513,13 +513,13 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     }
   };
 
-  const isManager = (): boolean => {
+  const isManager = useCallback((): boolean => {
     // Check both database enum values and legacy values for backward compatibility
     return userProfile?.role === 'manager' ||
            userProfile?.role === 'admin';
-  };
+  }, [userProfile]);
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     userProfile,
     isAuthenticated,
@@ -536,7 +536,24 @@ export const AuthProvider: React.FC<{children: React.ReactNode;}> = ({ children 
     clearError,
     checkRoleFromBothSources,
     synchronizeRoles
-  };
+  }), [
+    user,
+    userProfile,
+    isAuthenticated,
+    isLoading,
+    authError,
+    isInitialized,
+    login,
+    logout,
+    register,
+    refreshUserData,
+    hasPermission,
+    isAdmin,
+    isManager,
+    clearError,
+    checkRoleFromBothSources,
+    synchronizeRoles
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -80,7 +80,6 @@ export default defineConfig(({ mode }) => ({
 
           // Animations and motion
           'animations': [
-          'motion',
           'framer-motion'],
 
 
