@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,54 +42,48 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Fetch employees count
-      const employeesResponse = await window.ezsite.apis.tablePage(11727, {
-        PageNo: 1,
-        PageSize: 1,
-        Filters: [{ name: "is_active", op: "Equal", value: true }]
-      });
-
-      // Fetch active products count
-      const productsResponse = await window.ezsite.apis.tablePage(11726, {
-        PageNo: 1,
-        PageSize: 1
-      });
-
-      // Fetch today's sales reports
       const today = new Date().toISOString().split('T')[0];
-      const salesResponse = await window.ezsite.apis.tablePage(12356, {
-        PageNo: 1,
-        PageSize: 10,
-        Filters: [{ name: "report_date", op: "StringStartsWith", value: today }]
-      });
-
-      // Fetch pending deliveries
-      const deliveriesResponse = await window.ezsite.apis.tablePage(12196, {
-        PageNo: 1,
-        PageSize: 1
-      });
-
-      // Fetch expiring licenses (next 30 days)
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      const licensesResponse = await window.ezsite.apis.tablePage(11731, {
-        PageNo: 1,
-        PageSize: 1,
-        Filters: [
-        { name: "expiry_date", op: "LessThanOrEqual", value: thirtyDaysFromNow.toISOString() },
-        { name: "status", op: "Equal", value: "Active" }]
 
-      });
+      const [employeesResponse, productsResponse, salesResponse, deliveriesResponse, licensesResponse] = await Promise.all([
+        window.ezsite.apis.tablePage(11727, {
+          PageNo: 1,
+          PageSize: 1,
+          Filters: [{ name: "is_active", op: "Equal", value: true }]
+        }),
+        window.ezsite.apis.tablePage(11726, {
+          PageNo: 1,
+          PageSize: 1
+        }),
+        window.ezsite.apis.tablePage(12356, {
+          PageNo: 1,
+          PageSize: 10,
+          Filters: [{ name: "report_date", op: "StringStartsWith", value: today }]
+        }),
+        window.ezsite.apis.tablePage(12196, {
+          PageNo: 1,
+          PageSize: 1
+        }),
+        window.ezsite.apis.tablePage(11731, {
+          PageNo: 1,
+          PageSize: 1,
+          Filters: [
+            { name: "expiry_date", op: "LessThanOrEqual", value: thirtyDaysFromNow.toISOString() },
+            { name: "status", op: "Equal", value: "Active" }
+          ]
+        })
+      ]);
 
       // Calculate total sales from today's reports
       let totalSales = 0;
       if (salesResponse.data?.List) {
         totalSales = salesResponse.data.List.reduce((sum: number, report: any) =>
-        sum + (report.total_sales || 0), 0
+          sum + (report.total_sales || 0), 0
         );
       }
 
@@ -112,7 +106,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -121,23 +115,16 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const QuickStatCard = ({
+  const QuickStatCard = useMemo(() => ({
     title,
     value,
     icon: Icon,
     color,
     onClick
-
-
-
-
-
-
-  }: {title: string;value: number | string;icon: any;color: string;onClick?: () => void;}) =>
-  <Card
-    className={`p-6 cursor-pointer hover:shadow-lg transition-shadow ${onClick ? 'hover:bg-gray-50' : ''}`}
-    onClick={onClick}>
-
+  }: {title: string;value: number | string;icon: any;color: string;onClick?: () => void;}) => (
+    <Card
+      className={`p-6 cursor-pointer hover:shadow-lg transition-shadow ${onClick ? 'hover:bg-gray-50' : ''}`}
+      onClick={onClick}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -145,23 +132,18 @@ const Dashboard = () => {
         </div>
         <Icon className={`h-8 w-8 ${color}`} />
       </div>
-    </Card>;
+    </Card>
+  ), [loading]);
 
 
-  const QuickAction = ({
+  const QuickAction = useMemo(() => ({
     title,
     description,
     icon: Icon,
     onClick,
     color = "text-blue-600"
-
-
-
-
-
-
-  }: {title: string;description: string;icon: any;onClick: () => void;color?: string;}) =>
-  <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+  }: {title: string;description: string;icon: any;onClick: () => void;color?: string;}) => (
+    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <div className="flex items-start space-x-3">
         <Icon className={`h-6 w-6 ${color} mt-1`} />
         <div>
@@ -169,7 +151,8 @@ const Dashboard = () => {
           <p className="text-sm text-gray-600">{description}</p>
         </div>
       </div>
-    </Card>;
+    </Card>
+  ), []);
 
 
   return (
