@@ -131,12 +131,11 @@ export const useStationStore = () => {
 
       // Check for duplicate station name
       const existingStation = localStore.stations.find(
-        s => (s.name?.toLowerCase() ?? '') === (stationData.name?.toLowerCase() ?? '') ||
-             (s.station_name?.toLowerCase() ?? '') === (stationData.station_name?.toLowerCase() ?? '')
+        s => (s.station_name?.toLowerCase() ?? '') === (stationData.station_name?.toLowerCase() ?? '')
       );
 
       if (existingStation) {
-        throw new Error(`Station "${stationData.name}" already exists`);
+        throw new Error(`Station "${stationData.station_name}" already exists`);
       }
 
       const result = await stationService.addStation(stationData);
@@ -150,7 +149,7 @@ export const useStationStore = () => {
 
       toast({
         title: "Success",
-        description: `Station "${stationData.name}" added successfully and is now available in all dropdowns`,
+        description: `Station "${stationData.station_name}" added successfully and is now available in all dropdowns`,
       });
 
       return { success: true };
@@ -185,7 +184,7 @@ export const useStationStore = () => {
 
       toast({
         title: "Success",
-        description: `Station "${stationData.name}" updated successfully`,
+        description: `Station "${stationData.station_name}" updated successfully`,
       });
 
       return { success: true };
