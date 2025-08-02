@@ -19,6 +19,8 @@ interface Station {
   status: string;
   last_updated?: string;
   created_by?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface StationFormDialogProps {
@@ -108,7 +110,6 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
       // Check for duplicate station name (exclude current station if editing)
       if (mode === 'add') {
         const existingStation = stations.find(s => 
-          s.name?.toLowerCase() === formData.station_name.trim().toLowerCase() ||
           s.station_name?.toLowerCase() === formData.station_name.trim().toLowerCase()
         );
         
@@ -129,18 +130,14 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
 
       // Prepare data for the station store
       const stationData = {
-        name: formData.station_name.trim(),
-        station_name: formData.station_name.trim(), // Legacy compatibility
+        station_name: formData.station_name.trim(),
         address: formData.address.trim(),
         phone: formData.phone.trim(),
         operating_hours: formData.operating_hours.trim(),
         manager_name: formData.manager_name.trim(),
-        status: formData.status as 'active' | 'inactive' | 'maintenance',
-        active: formData.status === 'Active',
-        notes: formData.operating_hours.trim(),
-        station_id: mode === 'add' 
-          ? formData.station_name.trim().toLowerCase().replace(/\s+/g, '-')
-          : station?.station_id || formData.station_name.trim().toLowerCase().replace(/\s+/g, '-')
+        status: formData.status,
+        last_updated: new Date().toISOString(),
+        created_by: 1
       };
 
       let result;
@@ -151,9 +148,9 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
         // Update existing station
         result = await updateStation({
           ...stationData,
-          id: station?.id || '',
-          created_at: station?.created_at,
-          updated_at: new Date().toISOString()
+          id: station?.id,
+          created_by: station?.created_by,
+          last_updated: new Date().toISOString()
         });
       }
 
@@ -281,21 +278,6 @@ const StationFormDialog: React.FC<StationFormDialogProps> = ({
 
           <div>
             <Label htmlFor="manager_name">Manager Name *</Label>
-            <Input
-              id="manager_name"
-              value={formData.manager_name}
-              onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
-              placeholder="Station manager name"
-              required
-              className={validationErrors.manager_name ? 'border-red-500' : ''}
-            />
-            {validationErrors.manager_name && (
-              <p className="text-xs text-red-500 mt-1 flex items-center space-x-1">
-                <AlertTriangle className="w-3 h-3" />
-                <span>{validationErrors.manager_name}</span>
-              </p>
-            )}
-          </div>
             <Input
               id="manager_name"
               value={formData.manager_name}
